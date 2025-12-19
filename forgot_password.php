@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $token = bin2hex(random_bytes(24));
       $expires = date('Y-m-d H:i:s', time() + 3600);
       $pdo->prepare('INSERT INTO password_resets (user_id,token,expires_at) VALUES (?,?,?)')->execute([$u['id'],$token,$expires]);
-      $resetLink = sprintf('%s/reset_password.php?token=%s', rtrim('http://localhost/cybercore','/'), $token);
+        $resetLink = sprintf('%s/reset_password.php?token=%s', rtrim(SITE_URL,'/'), $token);
       $html = "<p>Pedido de redefinição de senha recebido. Clique no link abaixo para redefinir a sua senha (válido 1 hora):</p><p><a href=\"$resetLink\">Redefinir Senha</a></p>";
       $sent = sendMail($email, 'Redefinição de Senha - CyberCore', $html);
       $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'password_reset','Password reset requested, email sent: '.($sent? 'yes':'no')]);
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Redefinir Senha - CyberCore</title>
-  <link rel="stylesheet" href="/cybercore/css/style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <main style="max-width:480px;margin:40px auto">

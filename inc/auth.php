@@ -18,7 +18,7 @@ function currentUser()
 function requireLogin()
 {
     if (empty($_SESSION['user_id'])) {
-        header('Location: /cybercore/login.php');
+        header('Location: login.php');
         exit;
     }
 }
@@ -27,7 +27,7 @@ function requireRole($roles)
 {
     $user = currentUser();
     if (!$user) {
-        header('Location: /cybercore/login.php');
+        header('Location: login.php');
         exit;
     }
     $allowed = is_array($roles) ? $roles : [$roles];

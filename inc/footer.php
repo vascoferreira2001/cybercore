@@ -1,5 +1,5 @@
   </main>
 </div>
-<script src="/cybercore/js/app.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

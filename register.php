@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Registo - CyberCore</title>
-  <link rel="stylesheet" href="/cybercore/css/style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <main style="max-width:800px;margin:24px auto">
@@ -82,9 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="form-row small">Ao submeter confirmo a veracidade dos dados para efeitos de faturação.</div>
       <div class="form-row"><button class="btn">Criar Conta</button></div>
     </form>
-    <div class="small">Já tem conta? <a href="/cybercore/login.php">Entrar</a></div>
+    <div class="small">Já tem conta? <a href="login.php">Entrar</a></div>
   </div>
 </main>
-<script src="/cybercore/js/app.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

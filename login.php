@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Login - CyberCore</title>
-  <link rel="stylesheet" href="/cybercore/css/style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <main style="max-width:480px;margin:40px auto">
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="form-row"><label>Senha</label><input type="password" name="password" required></div>
       <div class="form-row"><button class="btn">Entrar</button></div>
     </form>
-    <div class="small"><a href="/cybercore/forgot_password.php">Esqueci a senha</a> · <a href="/cybercore/register.php">Criar conta</a></div>
+    <div class="small"><a href="forgot_password.php">Esqueci a senha</a> · <a href="register.php">Criar conta</a></div>
   </div>
 </main>
 </body>
