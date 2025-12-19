@@ -1,0 +1,7 @@
+{
+  "name": "cybercore/client-area",
+  "description": "Scaffold da Área de Cliente CyberCore",
+  "require": {
+    "phpmailer/phpmailer": "^6.8"
+  }
+}
