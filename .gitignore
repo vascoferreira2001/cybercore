@@ -1,0 +1,8 @@
+# Ficheiros sensíveis - não versionar
+inc/db_credentials.php
+
+# Outros ficheiros comuns a ignorar
+*.log
+.DS_Store
+vendor/
+node_modules/

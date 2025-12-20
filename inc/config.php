@@ -1,10 +1,8 @@
 <?php
+require_once __DIR__ . '/db_credentials.php';
+
 // Configuração da base de dados - ajustar para produção
 // Para localhost (XAMPP):
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'cybercore');
-define('DB_USER', 'root');
-define('DB_PASS', '');
 
 // Para produção (alojamento), substitua pelos valores do seu servidor:
 // define('DB_HOST', 'seu_host_mysql');
