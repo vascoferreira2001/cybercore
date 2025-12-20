@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS domains (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   domain VARCHAR(255) NOT NULL,
+  type ENUM('Alojamento Web', 'Alojamento de Email', 'Domínios', 'Servidores Dedicados', 'Servidores VPS', 'Serviços de Manutenção de Websites', 'Desenvolvimento de Website', 'Gestão de Redes Sociais') NOT NULL DEFAULT 'Domínios',
   registered_on DATE NULL,
   expires_on DATE NULL,
   status ENUM('active','expired','pending') DEFAULT 'active',
