@@ -23,6 +23,7 @@ if ($user['role'] === 'Gestor') {
   $metrics['tickets_open'] = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status = 'open'")->fetchColumn();
   $metrics['domains_total'] = $pdo->query('SELECT COUNT(*) FROM domains')->fetchColumn();
 } else { // Cliente
+  $stmt = $pdo->prepare('SELECT COUNT(*) FROM domains WHERE user_id = ?'); $stmt->execute([$user['id']]); $metrics['total_services'] = $stmt->fetchColumn();
   $stmt = $pdo->prepare('SELECT COUNT(*) FROM domains WHERE user_id = ? AND status = "active"'); $stmt->execute([$user['id']]); $metrics['my_services_active'] = $stmt->fetchColumn();
   $stmt = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE user_id = ? AND status = 'open'"); $stmt->execute([$user['id']]); $metrics['my_tickets_active'] = $stmt->fetchColumn();
   $stmt = $pdo->prepare("SELECT COUNT(*) FROM invoices WHERE user_id = ? AND status != 'paid' AND due_date < NOW()"); $stmt->execute([$user['id']]); $metrics['overdue_invoices'] = $stmt->fetchColumn();
@@ -64,7 +65,7 @@ if ($user['role'] === 'Gestor') {
   <div class="widgets">
     <div class="widget">
       <h4>Serviços Ativos</h4>
-      <p><?php echo $metrics['my_services_active']; ?></p>
+      <p><?php echo $metrics['total_services']; ?></p>
     </div>
     <div class="widget">
       <h4>Domínios Ativos</h4>
