@@ -34,7 +34,6 @@ if ($user['role'] === 'Gestor') {
   <h2>Dashboard</h2>
   <p><strong>Cliente:</strong> <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></p>
   <p><strong>ID Cliente:</strong> <?php echo $cwc; ?></p>
-  <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
   <p class="small">Bem-vindo. O painel abaixo mostra apenas o que é relevante para o seu papel.</p>
 </div>
 
