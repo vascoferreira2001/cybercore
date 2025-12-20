@@ -6,9 +6,6 @@ $user = currentUser();
 $pdo = getDB();
 if (!$user) { header('Location: logout.php'); exit; }
 
-// Debug: mostrar role
-echo "Role: " . $user['role'] . "<br>";
-
 // Gerar CWC ID
 $cwc = 'CWC#' . str_pad($user['id'], 4, '0', STR_PAD_LEFT);
 
