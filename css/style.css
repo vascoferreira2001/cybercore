@@ -16,3 +16,7 @@ label{display:block;margin-bottom:6px}
 input[type=text],input[type=email],input[type=password],select,textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px}
 .btn{display:inline-block;padding:8px 14px;background:#0b84a5;color:#fff;border-radius:4px;text-decoration:none;border:none;cursor:pointer}
 .small{font-size:13px;color:#666}
+.widgets{display:flex;gap:16px;margin-bottom:16px}
+.widget{background:#fff;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);flex:1;text-align:center}
+.widget h4{margin:0 0 8px 0;font-size:14px;color:#333}
+.widget p{margin:0;font-size:18px;font-weight:bold;color:#0b3b5a}

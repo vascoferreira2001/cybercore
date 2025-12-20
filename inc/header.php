@@ -19,9 +19,8 @@ require_once __DIR__ . '/auth.php';
       $cwc = 'CWC#' . str_pad($cu['id'], 4, '0', STR_PAD_LEFT);
     ?>
       <div class="user-info" style="margin-bottom:12px;font-size:14px">
-        <?php echo htmlspecialchars($cu['first_name'].' '.$cu['last_name']); ?><br>
-        ID Cliente: <?php echo $cwc; ?><br>
-        Email: <?php echo htmlspecialchars($cu['email']); ?>
+        <strong><?php echo htmlspecialchars($cu['first_name'].' '.$cu['last_name']); ?></strong><br>
+        ID Cliente: <?php echo $cwc; ?>
       </div>
     <?php endif; ?>
     <nav>
