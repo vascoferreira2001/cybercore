@@ -2,6 +2,11 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
+
+// Prevenir cache para garantir que os dados sejam sempre atualizados
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
 ?>
 <!doctype html>
 <html lang="pt">
