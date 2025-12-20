@@ -26,7 +26,7 @@ if ($user['role'] === 'Gestor') {
   $stmt = $pdo->prepare('SELECT COUNT(*) FROM domains WHERE user_id = ? AND status = "active"'); $stmt->execute([$user['id']]); $metrics['my_services_active'] = $stmt->fetchColumn();
   $stmt = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE user_id = ? AND status = 'open'"); $stmt->execute([$user['id']]); $metrics['my_tickets_active'] = $stmt->fetchColumn();
   $stmt = $pdo->prepare("SELECT COUNT(*) FROM invoices WHERE user_id = ? AND status != 'paid' AND due_date < NOW()"); $stmt->execute([$user['id']]); $metrics['overdue_invoices'] = $stmt->fetchColumn();
-  $stmt = $pdo->prepare("SELECT SUM(amount) FROM invoices WHERE user_id = ? AND status != 'paid' AND due_date < NOW()"); $stmt->execute([$user['id']]); $metrics['overdue_amount'] = $stmt->fetchColumn() ?: 0;
+  $stmt = $pdo->prepare("SELECT SUM(amount) FROM invoices WHERE user_id = ?"); $stmt->execute([$user['id']]); $metrics['total_billed'] = $stmt->fetchColumn() ?: 0;
 }
 
 ?>
@@ -76,8 +76,8 @@ if ($user['role'] === 'Gestor') {
       <p><?php echo $metrics['overdue_invoices']; ?></p>
     </div>
     <div class="widget">
-      <h4>Valor em Atraso</h4>
-      <p><?php echo number_format($metrics['overdue_amount'], 2); ?> €</p>
+      <h4>Total Faturado por Tickets Abertos</h4>
+      <p><?php echo $metrics['my_tickets_active'] > 0 ? number_format($metrics['total_billed'] / $metrics['my_tickets_active'], 2) : '0.00'; ?> €</p>
     </div>
   </div>
 <?php endif; ?>
