@@ -1,26 +1,38 @@
 <?php
-// Configuração da base de dados - ajustar para produção
-// Para localhost (XAMPP):
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'cybercore');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+// Configuração via variáveis de ambiente (ou .env no root). Mais seguro para produção.
+// Se existir um ficheiro .env no root do projecto, carregamos as variáveis.
+$envPath = __DIR__ . '/../.env';
+if (file_exists($envPath)) {
+	$lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+	foreach ($lines as $line) {
+		$line = trim($line);
+		if ($line === '' || strpos($line, '#') === 0) continue;
+		if (strpos($line, '=') === false) continue;
+		list($name, $value) = explode('=', $line, 2);
+		$name = trim($name);
+		$value = trim($value);
+		if (preg_match('/^([\"\'])(.*)\\1$/', $value, $m)) $value = $m[2];
+		putenv("$name=$value");
+		$_ENV[$name] = $value;
+		$_SERVER[$name] = $value;
+	}
+}
 
-// Para produção (alojamento), substitua pelos valores do seu servidor:
-// define('DB_HOST', 'seu_host_mysql');
-// define('DB_NAME', 'seu_db_name');
-// define('DB_USER', 'seu_db_user');
-// define('DB_PASS', 'seu_db_pass');
+// Database settings (read from env, fallback to safe defaults)
+define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+define('DB_NAME', getenv('DB_NAME') ?: 'cybercore');
+define('DB_USER', getenv('DB_USER') ?: 'cybercore');
+define('DB_PASS', getenv('DB_PASS') ?: '0NLVst#6ibr1h?fd');
 
 // Site settings
-define('SITE_NAME', 'CyberCore - Área de Cliente');
-define('SITE_URL', 'http://localhost/cybercore'); // Para produção: 'https://seudominio.com'
+define('SITE_NAME', getenv('SITE_NAME') ?: 'CyberCore - Área de Cliente');
+define('SITE_URL', getenv('SITE_URL') ?: 'http://localhost/cybercore');
 
-// SMTP / Mail settings - configure para produção
-define('SMTP_HOST', ''); // Ex.: 'smtp.gmail.com' ou 'mail.seudominio.com'
-define('SMTP_PORT', 587);
-define('SMTP_USER', ''); // Seu email SMTP
-define('SMTP_PASS', ''); // Senha SMTP
-define('SMTP_SECURE', 'tls'); // 'tls' ou 'ssl'
-define('MAIL_FROM', 'no-reply@seudominio.com');
-define('MAIL_FROM_NAME', 'CyberCore');
+// SMTP / Mail settings - configure via env para produção
+define('SMTP_HOST', getenv('SMTP_HOST') ?: '');
+define('SMTP_PORT', getenv('SMTP_PORT') ?: 587);
+define('SMTP_USER', getenv('SMTP_USER') ?: '');
+define('SMTP_PASS', getenv('SMTP_PASS') ?: '');
+define('SMTP_SECURE', getenv('SMTP_SECURE') ?: 'tls');
+define('MAIL_FROM', getenv('MAIL_FROM') ?: 'no-reply@seudominio.com');
+define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: 'CyberCore');
