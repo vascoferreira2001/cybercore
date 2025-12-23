@@ -10,23 +10,35 @@ if (!$user) { header('Location: logout.php'); exit; }
 $cwc = 'CWC#' . str_pad($user['id'], 4, '0', STR_PAD_LEFT);
 
 // Resumos e métricas conforme role
+// Função segura para contagens que evita falhas caso tabelas não existam
+function safeCount($pdo, $sql, $params = []) {
+  try {
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return (int)$stmt->fetchColumn();
+  } catch (PDOException $e) {
+    error_log('Dashboard metric error: ' . $e->getMessage());
+    return 0;
+  }
+}
+
 $metrics = [];
 if ($user['role'] === 'Gestor') {
-  $metrics['users_total'] = $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
-  $metrics['domains_total'] = $pdo->query('SELECT COUNT(*) FROM domains')->fetchColumn();
-  $metrics['invoices_unpaid'] = $pdo->query("SELECT COUNT(*) FROM invoices WHERE status = 'unpaid'")->fetchColumn();
-  $metrics['tickets_open'] = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status = 'open'")->fetchColumn();
+  $metrics['users_total'] = safeCount($pdo, 'SELECT COUNT(*) FROM users');
+  $metrics['domains_total'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains');
+  $metrics['invoices_unpaid'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE status = 'unpaid'");
+  $metrics['tickets_open'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'open'");
 } elseif ($user['role'] === 'Suporte Financeira') {
-  $metrics['invoices_total'] = $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
-  $metrics['invoices_unpaid'] = $pdo->query("SELECT COUNT(*) FROM invoices WHERE status = 'unpaid'")->fetchColumn();
+  $metrics['invoices_total'] = safeCount($pdo, 'SELECT COUNT(*) FROM invoices');
+  $metrics['invoices_unpaid'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE status = 'unpaid'");
 } elseif (in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])) {
-  $metrics['tickets_open'] = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status = 'open'")->fetchColumn();
-  $metrics['domains_total'] = $pdo->query('SELECT COUNT(*) FROM domains')->fetchColumn();
+  $metrics['tickets_open'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'open'");
+  $metrics['domains_total'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains');
 } else { // Cliente
-  $stmt = $pdo->prepare('SELECT COUNT(*) FROM domains WHERE user_id = ? AND status = "active"'); $stmt->execute([$user['id']]); $metrics['total_services'] = $stmt->fetchColumn();
-  $stmt = $pdo->prepare('SELECT COUNT(*) FROM domains WHERE user_id = ? AND type = "Domínios" AND status = "active"'); $stmt->execute([$user['id']]); $metrics['my_services_active'] = $stmt->fetchColumn();
-  $stmt = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE user_id = ? AND status = 'open'"); $stmt->execute([$user['id']]); $metrics['my_tickets_active'] = $stmt->fetchColumn();
-  $stmt = $pdo->prepare("SELECT COUNT(*) FROM invoices WHERE user_id = ? AND status != 'paid' AND due_date < NOW()"); $stmt->execute([$user['id']]); $metrics['overdue_invoices'] = $stmt->fetchColumn();
+  $metrics['total_services'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains WHERE user_id = ? AND status = "active"', [$user['id']]);
+  $metrics['my_services_active'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains WHERE user_id = ? AND type = "Domínios" AND status = "active"', [$user['id']]);
+  $metrics['my_tickets_active'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE user_id = ? AND status = 'open'", [$user['id']]);
+  $metrics['overdue_invoices'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE user_id = ? AND status != 'paid' AND due_date < NOW()", [$user['id']]);
 }
 
 ?>

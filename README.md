@@ -1,101 +1,189 @@
-CyberCore - Área de Cliente (Local XAMPP)
+# CyberCore - Área de Cliente
 
-Importante: este é um scaffold para correr em XAMPP (localhost). Siga os passos abaixo para testar localmente.
+## Visão Geral
 
-CyberCore - Área de Cliente (Local XAMPP)
+CyberCore é uma plataforma de área de cliente para gestão de domínios, alojamento e suporte. Destina-se a correr **apenas em produção**, ligada a uma base de dados já existente no servidor.
 
-Importante: este é um scaffold para correr em XAMPP (localhost). Siga os passos abaixo para testar localmente.
+## Configuração (Produção)
 
-1. Coloque a pasta `cybercore` em `htdocs` do XAMPP (ex.: /Applications/XAMPP/xamppfiles/htdocs/cybercore).
-2. Abra `phpMyAdmin` e crie uma base de dados chamada `cybercore` (ou altere `inc/config.php`).
-3. Importe `sql/schema.sql` no phpMyAdmin.
-4. Configure `inc/config.php` se necessário (credenciais DB).
-5. Inicie Apache e MySQL no XAMPP.
-6. Aceda a `http://localhost/cybercore/login.php`.
+### Variáveis de Ambiente
 
-Notas:
-- Esta versão contém páginas básicas: registo, login, dashboard, tickets, logs e placeholders para financeiro/domínios.
-- Para envio de emails, configure o servidor SMTP do PHP (php.ini) ou utilize uma biblioteca externa.
-
-Instalação de dependências (recomendada):
-
-1. Instale o Composer (se ainda não tiver): https://getcomposer.org/
-2. Na pasta do projeto execute:
+Configure as seguintes variáveis de ambiente no servidor:
 
 ```bash
-cd /Applications/XAMPP/xamppfiles/htdocs/cybercore
-composer install
+# Base de Dados
+export DB_HOST=127.0.0.1
+export DB_NAME=cybercore
+export DB_USER=cybercore
+export DB_PASS='sua_password'
+
+# Site
+export SITE_URL='https://seu-dominio'
+export SITE_NAME='CyberCore - Área de Cliente'
+
+# Email (opcional)
+export SMTP_HOST='smtp.seu-dominio.com'
+export SMTP_PORT=587
+export SMTP_USER='seu-email@seu-dominio.com'
+export SMTP_PASS='password'
+export SMTP_SECURE='tls'
+export MAIL_FROM='noreply@seu-dominio.com'
+export MAIL_FROM_NAME='CyberCore'
 ```
 
-Importar base de dados:
+### Alternativa: Ficheiro Local (não versionado)
+
+Se preferir usar um ficheiro em vez de variáveis de ambiente, coloque `inc/db_credentials.php` no servidor (não será commitado ao repositório):
+
+```php
+<?php
+define('DB_HOST', 'seu-host');
+define('DB_NAME', 'sua-base');
+define('DB_USER', 'seu-utilizador');
+define('DB_PASS', 'sua-password');
+?>
+```
+
+## Rotas Principais
+
+| Rota | Descrição |
+|------|-----------|
+| `login.php` | Autenticação |
+| `register.php` | Registo de novos utilizadores |
+| `dashboard.php` | Painel inicial (após autenticação) |
+| `support.php` | Gestão de tickets de suporte |
+| `domains.php` | Gestão de domínios |
+| `finance.php` | Aviso de pagamentos / Financeiro |
+| `logs.php` | Histórico de atividades |
+| `manage_users.php` | Gestão de utilizadores (Gestor) |
+
+## Permissões por Role
+
+### Cliente
+- Acesso à sua própria área
+- Domínios próprios (criar, editar, eliminar)
+- Suporte (criar tickets, ver seus tickets)
+- Financeiro (ver faturas próprias)
+- Logs (ver seus logs)
+
+### Suporte ao Cliente
+- Ver/editar todos os domínios (sem eliminar)
+- Ver tickets de suporte
+- Ver logs
+
+### Suporte Técnica
+- Ver/editar todos os domínios (sem eliminar)
+- Ver tickets de suporte
+- Ver logs
+
+### Suporte Financeira
+- Ver/editar todas as faturas
+- Ver logs financeiros
+- Sem acesso a domínios
+
+### Gestor
+- Acesso total a todas as funcionalidades
+- Gestão de utilizadores (alterar roles, ver detalhes)
+- Não pode remover seu próprio role Gestor
+
+## Segurança
+
+### Implementações
+- **Sessões endurecidas**: cookies com `HttpOnly`, `SameSite=Strict` e `Secure` (em HTTPS)
+- **CSRF**: tokens gerados por sessão; todos os formulários críticos usam POST + validação
+- **Rate Limiting**: limite básico de 5 tentativas de login em 10 minutos
+- **Prepared Statements**: toda a interação com BD usa prepared statements
+- **Password Hashing**: `password_hash()` com algoritmo bcrypt
+- **Session Regeneration**: ID de sessão regenerado após login bem-sucedido
+
+### Checklist de Implantação
+- [ ] HTTPS ativado no servidor
+- [ ] Variáveis de ambiente ou ficheiro `inc/db_credentials.php` configurado
+- [ ] Base de dados com tabelas: `users`, `domains`, `tickets`, `invoices`, `logs`, `password_resets`
+- [ ] SMTP configurado (se usar envio de emails)
+- [ ] Logs do servidor (`error_log`) monitorados
+
+## Resilência
+
+- **Dashboard**: se alguma tabela não existir, o painel apresenta 0 e regista o erro sem cair (HTTP 500)
+- **Migrações**: ficheiro `migrate.php` é idempotente (não falha em re-execuções); **não é necessário em produção**
+
+## Desenvolvimento
+
+### Migração Local (Opcional)
+
+Para ambiente de desenvolvimento:
 
 ```bash
-# Criar base e importar esquema
-mysql -u root -p < sql/schema.sql
-mysql -u root -p cybercore < sql/password_resets.sql
+php migrate.php
 ```
 
-Configuração SMTP para envio de emails (opcional):
+Este script é **idempotente** e cria/verifica as tabelas necessárias. Em produção, **não executar**.
 
-1. Edite `inc/config.php` e preencha `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` e `SMTP_SECURE`.
-2. Ajuste `MAIL_FROM` e `MAIL_FROM_NAME` conforme necessário.
-3. Se preferir usar o `mail()` do PHP, deixe `SMTP_HOST` vazio e configure o `SMTP`/`sendmail` no `php.ini` do XAMPP.
-
-Testes rápidos:
-
-1. Registe um utilizador em `http://localhost/cybercore/register.php`.
-2. Peça redefinição de senha em `http://localhost/cybercore/forgot_password.php`.
-3. Verifique a tabela `logs` e `password_resets` no phpMyAdmin para confirmar o fluxo.
-
-Gestão de roles (painel Gestor):
-
-1. Crie os utilizadores de teste (ou registe manualmente). Pode usar `sample_users.php`.
-2. Entre com um utilizador Gestor (ex.: gestor@example.test / Password123!).
-3. Aceda a `http://localhost/cybercore/manage_users.php` para listar utilizadores e alterar roles.
-4. Não altere o seu próprio role para evitar perder privilégios.
-
-Matriz de permissões resumida:
-- Cliente: acesso normal à sua área (domínios próprios, suporte, financeiro limitado, logs próprios).
-- Suporte: acesso a tickets, ver/editar domínios; sem gestão financeira completa.
-- Contabilista: acesso a financeiro e logs (visualização), sem criação/edição de domínios.
-- Gestor: acesso total e painel de gestão de utilizadores.
-
-Comandos SQL importantes:
-
-- Se já tiver a tabela `users` com a coluna `role`, actualize o enum com o comando abaixo para incluir os novos cargos:
-
-```sql
-ALTER TABLE users MODIFY COLUMN role ENUM('Cliente','Suporte ao Cliente','Suporte Financeira','Suporte Técnica','Gestor') NOT NULL DEFAULT 'Cliente';
-```
-
-CSRF (proteção contra falsificação de formulários):
-
-- Este scaffold agora inclui um pequeno helper em `inc/csrf.php` que gera um token por sessão e valida-o em pedidos POST.
-- Todos os formulários críticos (`register.php`, `login.php`, `forgot_password.php`, `reset_password.php`, `support.php`, `domains.php`, `domains_edit.php`, `manage_users.php`) já têm um campo oculto com o token e validação no servidor.
-- Se receber `Invalid CSRF token`, verifique se as sessões estão a funcionar correctamente no XAMPP (php.ini) e que está a usar o mesmo host/porta (cookies de sessão dependem do domínio).
-
-Teste rápido após alterações:
-
-1. Execute as alterações SQL (se necessário):
+### Criar Utilizadores de Teste
 
 ```bash
-mysql -u root -p < /Applications/XAMPP/xamppfiles/htdocs/cybercore/sql/schema.sql
-mysql -u root -p cybercore < /Applications/XAMPP/xamppfiles/htdocs/cybercore/sql/roles_and_domains.sql
-mysql -u root -p cybercore < /Applications/XAMPP/xamppfiles/htdocs/cybercore/sql/password_resets.sql
+php sample_users.php
 ```
 
-2. Instale dependências:
+Cria utilizadores de teste com password `Password123!`:
+- `cliente@example.test` (Cliente)
+- `suporte_cliente@example.test` (Suporte ao Cliente)
+- `suporte_finance@example.test` (Suporte Financeira)
+- `suporte_tecnica@example.test` (Suporte Técnica)
+- `gestor@example.test` (Gestor)
 
-```bash
-cd /Applications/XAMPP/xamppfiles/htdocs/cybercore
-composer install
+## Estrutura de Ficheiros
+
+```
+.
+├── inc/
+│   ├── auth.php          # Autenticação e sessões
+│   ├── config.php        # Configuração (env/ficheiro)
+│   ├── csrf.php          # Tokens CSRF
+│   ├── db.php            # Conexão PDO
+│   ├── header.php        # Cabeçalho/navegação
+│   ├── footer.php        # Rodapé
+│   └── mailer.php        # Envio de emails
+├── sql/
+│   ├── schema.sql        # Schema base (dev)
+│   ├── roles_and_domains.sql  # Tabela de domínios (dev)
+│   ├── services.sql      # Tabelas de serviços (dev)
+│   └── password_resets.sql    # Tabela de resets (dev)
+├── js/
+│   └── app.js            # Validação cliente simples
+├── css/
+│   └── style.css         # Estilos básicos
+├── login.php
+├── register.php
+├── dashboard.php
+├── support.php
+├── domains.php
+├── domains_edit.php
+├── finance.php
+├── logs.php
+├── manage_users.php
+├── forgot_password.php
+├── reset_password.php
+├── logout.php
+├── migrate.php           # Migração (dev only)
+├── sample_users.php      # Criar users de teste (dev only)
+└── README.md
 ```
 
-3. Criar utilizadores de teste:
+## Email
 
-```bash
-php /Applications/XAMPP/xamppfiles/htdocs/cybercore/sample_users.php
-```
+Por padrão, usa `mail()` do PHP. Para produção, configure SMTP via variáveis de ambiente (veja secção Configuração acima).
 
+Quando `SMTP_HOST` está vazio, usa `mail()`. Caso contrário, aguarda implementação de PHPMailer com SMTP.
 
+## Logs
 
+- Atividades são registadas na tabela `logs` (user_id, type, message, created_at)
+- Erros de sistema em `error_log` do PHP
+
+## Suporte
+
+Para questões de segurança, confira `inc/auth.php`, `inc/csrf.php` e as permissões em cada página.
+
+Para relatórios de bugs ou melhorias, contacte o administrador.

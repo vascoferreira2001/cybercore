@@ -30,21 +30,19 @@ header("Expires: 0");
     <?php endif; ?>
     <nav>
       <a href="dashboard.php">Página de Início</a>
-      <?php if(!$cu || in_array($cu['role'], ['Cliente','Suporte ao Cliente','Suporte Técnica','Gestor'])): ?>
+      <?php if(in_array($cu['role'], ['Cliente','Suporte ao Cliente','Suporte Técnica','Gestor'])): ?>
         <a href="support.php">Suporte</a>
       <?php endif; ?>
-      <?php if(!$cu || in_array($cu['role'], ['Cliente','Gestor','Suporte ao Cliente','Suporte Técnica'])): ?>
+      <?php if(in_array($cu['role'], ['Cliente','Gestor','Suporte ao Cliente','Suporte Técnica'])): ?>
         <a href="domains.php">Domínios</a>
       <?php endif; ?>
-      <?php if(!$cu || in_array($cu['role'], ['Cliente','Gestor'])): ?>
+      <?php if(in_array($cu['role'], ['Cliente','Suporte Financeira','Gestor'])): ?>
+        <a href="finance.php">Financeiro</a>
       <?php endif; ?>
-        <?php if(!$cu || in_array($cu['role'], ['Cliente','Suporte Financeira','Gestor'])): ?>
-          <a href="finance.php">Financeiro</a>
-        <?php endif; ?>
-        <?php if(!$cu || in_array($cu['role'], ['Cliente','Suporte Financeira','Gestor'])): ?>
-          <a href="logs.php">Logs</a>
-        <?php endif; ?>
-      <?php if($cu && $cu['role'] === 'Gestor'): ?>
+      <?php if(in_array($cu['role'], ['Cliente','Suporte Financeira','Gestor'])): ?>
+        <a href="logs.php">Logs</a>
+      <?php endif; ?>
+      <?php if($cu['role'] === 'Gestor'): ?>
         <a href="manage_users.php">Gestão de Utilizadores</a>
       <?php endif; ?>
     </nav>
