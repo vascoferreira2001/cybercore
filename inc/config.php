@@ -1,14 +1,19 @@
 <?php
-require_once __DIR__ . '/db_credentials.php';
-
 // Configuração da base de dados - ajustar para produção
-// Para localhost (XAMPP):
+// Preferir variáveis de ambiente; permitir fallback opcional via ficheiro não versionado.
+
+// Fallback opcional: se existir `inc/db_credentials.php`, incluir (não deve ser versionado)
+$credsFile = __DIR__ . '/db_credentials.php';
+if (file_exists($credsFile)) {
+	require_once $credsFile;
+}
 
 // Database settings (read from env, fallback to safe defaults)
-define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
-define('DB_NAME', getenv('DB_NAME') ?: 'cybercore');
-define('DB_USER', getenv('DB_USER') ?: 'cybercore');
-define('DB_PASS', getenv('DB_PASS') ?: '0NLVst#6ibr1h?fd');
+if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'cybercore');
+if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: 'cybercore');
+// Por segurança, evitar passwords hardcoded; usar env ou o ficheiro local.
+if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') ?: '');
 
 // Site settings
 define('SITE_NAME', getenv('SITE_NAME') ?: 'CyberCore - Área de Cliente');

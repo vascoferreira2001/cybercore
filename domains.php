@@ -47,8 +47,10 @@ if ($action === 'edit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: domains.php'); exit;
 }
 
-if ($action === 'delete' && isset($_GET['id'])) {
-    $id = intval($_GET['id']);
+if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+  // Validate CSRF for destructive action
+  require_once __DIR__ . '/inc/csrf.php'; csrf_validate();
+  $id = intval($_POST['id'] ?? 0);
     $stmt = $pdo->prepare('SELECT * FROM domains WHERE id = ?'); $stmt->execute([$id]); $d = $stmt->fetch();
     if (!$d) { header('Location: domains.php'); exit; }
     // Only Gestor or owner can delete
@@ -107,22 +109,16 @@ if ($user['role'] === 'Gestor') {
           <a href="domains_edit.php?id=<?php echo $d['id']; ?>">Editar</a>
         <?php endif; ?>
         <?php if($user['role'] === 'Gestor' || $d['user_id'] == $user['id']): ?>
-          &nbsp;|&nbsp;<a href="domains.php?action=delete&id=<?php echo $d['id']; ?>" onclick="return confirm('Eliminar domínio?');">Eliminar</a>
+          &nbsp;|&nbsp;
+          <form method="post" action="domains.php?action=delete" style="display:inline" onsubmit="return confirm('Eliminar domínio?');">
+            <?php echo csrf_input(); ?>
+            <input type="hidden" name="id" value="<?php echo $d['id']; ?>">
+            <button class="btn" style="background:#c33">Eliminar</button>
+          </form>
         <?php endif; ?>
       </td></tr>
     <?php endforeach; ?></tbody></table>
   <?php endif; ?>
 </div>
 
-<?php include __DIR__ . '/inc/footer.php'; ?>
-<?php
-require_once __DIR__ . '/inc/db.php';
-if (session_status() === PHP_SESSION_NONE) session_start();
-if (empty($_SESSION['user_id'])) { header('Location: login.php'); exit; }
-?>
-<?php include __DIR__ . '/inc/header.php'; ?>
-<div class="card">
-  <h2>Domínios</h2>
-  <p>Página placeholder para gestão de domínios.</p>
-</div>
 <?php include __DIR__ . '/inc/footer.php'; ?>

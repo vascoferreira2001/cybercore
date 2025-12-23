@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate();
   $uid = intval($_POST['user_id'] ?? 0);
   $newRole = $_POST['role'] ?? '';
-    $allowed = ['Cliente','Suporte','Contabilista','Gestor'];
+    $allowed = ['Cliente','Suporte ao Cliente','Suporte Financeira','Suporte Técnica','Gestor'];
     if ($uid <= 0 || !in_array($newRole, $allowed)) {
         $error = 'Dados inválidos.';
     } else {
@@ -33,7 +33,7 @@ $users = $pdo->query('SELECT id,first_name,last_name,email,role,created_at FROM 
 <div class="card">
   <h2>Gestão de Utilizadores</h2>
   <?php if(!empty($error)): ?><div class="card" style="background:#ffefef;color:#900"><?php echo $error; ?></div><?php endif; ?>
-  <table style="width:100%;border-collapse:collapse"><thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Role</th><th>Criar</th></tr></thead><tbody>
+  <table style="width:100%;border-collapse:collapse"><thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Role</th><th>Alterar</th></tr></thead><tbody>
     <?php foreach($users as $u): ?>
       <tr style="border-top:1px solid #eee"><td><?php echo $u['id']; ?></td>
       <td><?php echo htmlspecialchars($u['first_name'].' '.$u['last_name']); ?></td>
@@ -44,8 +44,9 @@ $users = $pdo->query('SELECT id,first_name,last_name,email,role,created_at FROM 
           <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
           <select name="role">
             <option <?php echo $u['role']==='Cliente'?'selected':''; ?>>Cliente</option>
-            <option <?php echo $u['role']==='Suporte'?'selected':''; ?>>Suporte</option>
-            <option <?php echo $u['role']==='Contabilista'?'selected':''; ?>>Contabilista</option>
+            <option <?php echo $u['role']==='Suporte ao Cliente'?'selected':''; ?>>Suporte ao Cliente</option>
+            <option <?php echo $u['role']==='Suporte Financeira'?'selected':''; ?>>Suporte Financeira</option>
+            <option <?php echo $u['role']==='Suporte Técnica'?'selected':''; ?>>Suporte Técnica</option>
             <option <?php echo $u['role']==='Gestor'?'selected':''; ?>>Gestor</option>
           </select>
           <button class="btn">Guardar</button>

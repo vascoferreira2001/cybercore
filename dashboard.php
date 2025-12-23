@@ -48,13 +48,13 @@ if ($user['role'] === 'Gestor') {
     <p>Tickets abertos: <?php echo $metrics['tickets_open']; ?></p>
     <p class="small">Utilize o menu para aceder às áreas detalhadas.</p>
   </div>
-<?php elseif ($user['role'] === 'Contabilista'): ?>
+<?php elseif ($user['role'] === 'Suporte Financeira'): ?>
   <div class="card">
-    <h3>Financeiro (Contabilista)</h3>
+    <h3>Financeiro (Suporte Financeira)</h3>
     <p>Total de faturas: <?php echo $metrics['invoices_total']; ?></p>
     <p>Faturas por pagar: <?php echo $metrics['invoices_unpaid']; ?></p>
   </div>
-<?php elseif ($user['role'] === 'Suporte'): ?>
+<?php elseif (in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])): ?>
   <div class="card">
     <h3>Suporte</h3>
     <p>Tickets abertos: <?php echo $metrics['tickets_open']; ?></p>

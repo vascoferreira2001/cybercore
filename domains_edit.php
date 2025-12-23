@@ -11,8 +11,9 @@ $stmt->execute([$id]);
 $d = $stmt->fetch();
 if (!$d) { header('Location: domains.php'); exit; }
 // Permission checks
-if ($user['role'] === 'Contabilista') { http_response_code(403); echo 'Acesso negado.'; exit; }
-if ($user['role'] !== 'Gestor' && $d['user_id'] != $user['id'] && $user['role'] !== 'Suporte') { http_response_code(403); echo 'Acesso negado.'; exit; }
+// Align permissions with roles used across the app
+if ($user['role'] === 'Suporte Financeira') { http_response_code(403); echo 'Acesso negado.'; exit; }
+if ($user['role'] !== 'Gestor' && $d['user_id'] != $user['id'] && !in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])) { http_response_code(403); echo 'Acesso negado.'; exit; }
 
 require_once __DIR__ . '/inc/csrf.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

@@ -4,24 +4,36 @@ require_once __DIR__ . '/inc/csrf.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 $error = '';
+// Basic rate limiting: max 5 attempts per 10 minutes per session
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate();
+  $now = time();
+  $attempts = $_SESSION['login_attempts'] ?? [];
+  // keep only recent attempts
+  $attempts = array_filter($attempts, function($t) use ($now){ return $t > ($now - 600); });
+  if (count($attempts) >= 5) {
+    $error = 'Demasiadas tentativas. Tente novamente mais tarde.';
+  } else {
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
     $pdo = getDB();
-    $stmt = $pdo->prepare('SELECT id,password_hash FROM users WHERE email = ?');
+    $stmt = $pdo->prepare('SELECT id, role, password_hash FROM users WHERE email = ?');
     $stmt->execute([$email]);
     $u = $stmt->fetch();
     if ($u && password_verify($password, $u['password_hash'])) {
+      session_regenerate_id(true);
       $_SESSION['user_id'] = $u['id'];
-      // Store role in session for quick checks
-      $_SESSION['role'] = $u['role'] ?? 'Cliente';
+      $_SESSION['role'] = $u['role'];
+      $_SESSION['login_attempts'] = []; // reset attempts on success
       $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login','User logged in']);
-        header('Location: dashboard.php');
-        exit;
+      header('Location: dashboard.php');
+      exit;
     } else {
-        $error = 'Credenciais inválidas.';
+      $attempts[] = $now;
+      $_SESSION['login_attempts'] = $attempts;
+      $error = 'Credenciais inválidas.';
     }
+  }
 }
 ?>
 <!doctype html>
