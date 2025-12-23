@@ -2,21 +2,36 @@
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f5f7fa}
 .app{display:flex;min-height:100vh}
-.sidebar{width:220px;background:#0b3b5a;color:#fff;padding:20px;display:flex;flex-direction:column}
-.sidebar .brand{font-weight:700;font-size:20px;margin-bottom:20px}
-.sidebar nav{flex:1}
-.sidebar nav a{display:block;color:#dbe9f6;padding:8px 0;text-decoration:none}
-.sidebar nav a:hover{background:rgba(255,255,255,0.03)}
-.sidebar .logout{margin-top:20px}
-.sidebar .logout a{color:#fff;text-decoration:none}
-.content{flex:1;padding:24px}
+.sidebar{width:280px;background:#0b3b5a;color:#fff;padding:20px;display:flex;flex-direction:column;overflow-y:auto}
+.sidebar .brand{font-weight:700;font-size:20px;margin-bottom:20px;text-align:center}
+.user-info{background:rgba(255,255,255,0.1);padding:12px;border-radius:6px;margin-bottom:20px;font-size:13px;text-align:center}
+.user-info .badge{display:inline-block;background:#0b84a5;padding:4px 8px;border-radius:4px;font-size:11px;margin-top:6px;color:#fff}
+.sidebar-nav{flex:1;display:flex;flex-direction:column;gap:8px}
+.nav-item{display:block;padding:10px 12px;color:#dbe9f6;text-decoration:none;border-radius:4px;transition:all 0.2s;cursor:pointer}
+.nav-item:hover{background:rgba(255,255,255,0.1);color:#fff}
+.nav-item .icon{margin-right:8px;font-size:16px}
+.nav-item .arrow{font-size:10px;float:right;margin-top:4px}
+.nav-group{margin:0}
+.submenu-toggle{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05)}
+.submenu{display:none;flex-direction:column;background:rgba(0,0,0,0.2);border-radius:4px;margin-top:4px;overflow:hidden}
+.submenu.active{display:flex}
+.nav-item-sub{display:block;padding:8px 12px 8px 32px;color:#b0d4e8;text-decoration:none;font-size:13px;transition:all 0.2s;border-left:2px solid transparent}
+.nav-item-sub:hover{background:rgba(255,255,255,0.08);color:#fff;border-left-color:#0b84a5}
+.content{flex:1;padding:24px;overflow-y:auto}
 .card{background:#fff;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);margin-bottom:16px}
 .form-row{margin-bottom:12px}
 label{display:block;margin-bottom:6px}
 input[type=text],input[type=email],input[type=password],select,textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px}
-.btn{display:inline-block;padding:8px 14px;background:#0b84a5;color:#fff;border-radius:4px;text-decoration:none;border:none;cursor:pointer}
+.btn{display:inline-block;padding:8px 14px;background:#0b84a5;color:#fff;border-radius:4px;text-decoration:none;border:none;cursor:pointer;transition:background 0.2s}
+.btn:hover{background:#086a84}
+.btn.danger{background:#c33}
+.btn.danger:hover{background:#a22}
 .small{font-size:13px;color:#666}
 .widgets{display:flex;gap:16px;margin-bottom:16px}
 .widget{background:#fff;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);flex:1;text-align:center}
 .widget h4{margin:0 0 8px 0;font-size:14px;color:#333}
 .widget p{margin:0;font-size:18px;font-weight:bold;color:#0b3b5a}
+.sidebar .logout{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,0.2)}
+.logout a{display:block;padding:10px 12px;color:#fff;text-decoration:none;border-radius:4px;text-align:center;background:rgba(255,0,0,0.2);transition:all 0.2s}
+.logout a:hover{background:rgba(255,0,0,0.4)}
+
