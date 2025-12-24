@@ -1,5 +1,4 @@
-# Ficheiros sensíveis - não versionar
-inc/db_credentials.php
+# Ficheiros sensíveis - uploads
 assets/uploads/*
 !assets/uploads/.gitkeep
 
