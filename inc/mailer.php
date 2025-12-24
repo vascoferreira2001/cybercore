@@ -29,11 +29,15 @@ function sendMail($to, $subject, $htmlBody, $plainBody = '') {
 
     // Se não tiver configuração SMTP, usar mail() como fallback
     if (empty($smtpHost)) {
+        $encodedFromName = mb_encode_mimeheader($fromName, 'UTF-8', 'Q');
+        $encodedSubject = mb_encode_mimeheader($subject, 'UTF-8', 'Q');
+
         $headers = "MIME-Version: 1.0\r\n";
-        $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-        $headers .= "From: {$fromName} <{$from}>\r\n";
+        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $headers .= "Content-Transfer-Encoding: 8bit\r\n";
+        $headers .= "From: {$encodedFromName} <{$from}>\r\n";
         $headers .= "Reply-To: {$from}\r\n";
-        $ok = mail($to, $subject, $htmlBody, $headers);
+        $ok = mail($to, $encodedSubject, $htmlBody, $headers);
         if (!$ok) {
             error_log('Envio de email falhou para ' . $to . ' via mail()');
         }
@@ -155,10 +159,11 @@ function sendViaSMTP($host, $port, $user, $pass, $secure, $from, $fromName, $to,
         throw new Exception("DATA falhou: $response");
     }
     
-    // Cabeçalhos e corpo
-    $headers = "From: {$fromName} <{$from}>" . $newline;
+    // Cabeçalhos e corpo (codificados para UTF-8)
+    $encodedFromName = mb_encode_mimeheader($fromName, 'UTF-8', 'Q');
+    $headers = "From: {$encodedFromName} <{$from}>" . $newline;
     $headers .= "To: <{$to}>" . $newline;
-    $headers .= "Subject: " . mb_encode_mimeheader($subject, 'UTF-8') . $newline;
+    $headers .= "Subject: " . mb_encode_mimeheader($subject, 'UTF-8', 'Q') . $newline;
     $headers .= "MIME-Version: 1.0" . $newline;
     $headers .= "Content-Type: text/html; charset=UTF-8" . $newline;
     $headers .= "Content-Transfer-Encoding: 8bit" . $newline;
