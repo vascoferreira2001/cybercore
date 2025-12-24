@@ -2,11 +2,18 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/settings.php';
 
 // Prevenir cache para garantir que os dados sejam sempre atualizados
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
+
+// Carregar logo e favicon
+$pdo = getDB();
+$siteLogo = getSetting($pdo, 'site_logo');
+$favicon = getSetting($pdo, 'favicon');
 ?>
 <!doctype html>
 <html lang="pt">
@@ -14,12 +21,21 @@ header("Expires: 0");
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?php echo SITE_NAME; ?></title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../css/style.css' : 'css/style.css'; ?>">
+  <?php if ($favicon && file_exists(__DIR__ . '/' . $favicon)): ?>
+    <link rel="icon" type="image/png" href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '..' : ''; ?><?php echo htmlspecialchars($favicon); ?>">
+  <?php endif; ?>
 </head>
 <body>
 <div class="app">
   <aside class="sidebar">
-    <div class="brand">CyberCore</div>
+    <div class="brand">
+      <?php if ($siteLogo && file_exists(__DIR__ . '/' . $siteLogo)): ?>
+        <img src="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '..' : ''; ?><?php echo htmlspecialchars($siteLogo); ?>" alt="Logo" style="max-width:150px;height:auto">
+      <?php else: ?>
+        CyberCore
+      <?php endif; ?>
+    </div>
     <?php $cu = currentUser(); if($cu): 
       $cwc = 'CWC#' . str_pad($cu['id'], 4, '0', STR_PAD_LEFT);
     ?>

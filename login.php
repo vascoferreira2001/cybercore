@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/csrf.php';
+require_once __DIR__ . '/inc/settings.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 $error = '';
@@ -35,6 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 }
+
+// Carregar background
+$pdo = getDB();
+$loginBackground = getSetting($pdo, 'login_background');
+$backgroundStyle = '';
+if ($loginBackground && file_exists($loginBackground)) {
+  $backgroundStyle = 'background-image:url(' . htmlspecialchars($loginBackground) . ');background-size:cover;background-position:center;background-attachment:fixed';
+}
 ?>
 <!doctype html>
 <html lang="pt">
@@ -44,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <title>Login - CyberCore</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body style="<?php echo $backgroundStyle; ?>">
 <main style="max-width:480px;margin:40px auto">
   <div class="card">
     <h2>Login</h2>
