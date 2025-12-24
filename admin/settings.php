@@ -67,9 +67,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // Cron settings
   $cronUrlPost = trim($_POST['cron_url'] ?? $cronUrl);
-    if (!$cronUrlPost) {
-        $cronUrlPost = $cronDefaultUrl;
-    }
+  if (!$cronUrlPost) {
+    $cronUrlPost = $cronDefaultUrl;
+  }
+  if ($cronUrlPost && !filter_var($cronUrlPost, FILTER_VALIDATE_URL)) {
     $errors[] = 'Cron URL inválida.';
   } else {
     setSetting($pdo, 'cron_url', $cronUrlPost);

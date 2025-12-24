@@ -1,5 +1,8 @@
 <?php
 // Cron de manutenção básico. Opcionalmente proteger com CRON_TOKEN no ambiente.
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
 require_once __DIR__ . '/inc/config.php';
 require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/settings.php';
@@ -19,15 +22,21 @@ if ($envToken) {
 
 try {
     $pdo = getDB();
+    
     // Aplicar timezone definido nas configurações
-    applyGeneralSettings($pdo);
+    $settings = applyGeneralSettings($pdo);
 
     // TODO: adicionar tarefas recorrentes aqui (ex: faturas, lembretes, etc.)
 
     // Registar última execução
-    setSetting($pdo, 'cron_last_run', date('Y-m-d H:i:s'));
-    echo 'OK ' . date('Y-m-d H:i:s');
+    $now = date('d/m/Y H:i:s');
+    setSetting($pdo, 'cron_last_run', $now);
+    
+    echo 'OK ' . $now . "\n";
+    echo 'Timezone: ' . date_default_timezone_get() . "\n";
 } catch (Throwable $e) {
     http_response_code(500);
-    echo 'ERROR: ' . $e->getMessage();
+    echo 'ERROR: ' . $e->getMessage() . "\n";
+    echo 'File: ' . $e->getFile() . ':' . $e->getLine() . "\n";
+    echo 'Trace: ' . $e->getTraceAsString();
 }
