@@ -40,6 +40,23 @@ $smtp = [
   'smtp_from_name' => getSetting($pdo, 'smtp_from_name', defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'CyberCore'),
 ];
 
+// Função auxiliar para carregar permissão (definida no início para uso global)
+function getDeptPermission($pdo, $deptId, $key) {
+  try {
+    // Tenta a nova estrutura primeiro
+    $r = $pdo->prepare('SELECT permission_value, permission_scope FROM department_permissions WHERE department_id=? AND permission_key=?');
+    $r->execute([$deptId, $key]);
+    $row = $r->fetch();
+    if ($row) {
+      return ['value'=>$row['permission_value'], 'scope'=>json_decode($row['permission_scope']??'[]', true)];
+    }
+    return ['value'=>'', 'scope'=>[]];
+  } catch (Exception $e) {
+    error_log('getDeptPermission error: ' . $e->getMessage());
+    return ['value'=>'', 'scope'=>[]];
+  }
+}
+
 // Processar atualizações
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate();
@@ -88,26 +105,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // === FUNÇÕES: Permissões Hierárquicas por departamento ===
   if (isset($_POST['save_hierarchical_permissions'])) {
-    foreach ($_POST['perm'] ?? [] as $deptId => $perms) {
-      foreach ($perms as $key => $value) {
-        $deptId = intval($deptId);
-        if ($deptId <= 0) continue;
-        
-        // Suportar checkboxes (sim/não) e radio buttons (múltiplas opções)
-        if (is_array($value)) {
-          // Se for array, provavelmente é um checkbox selecionado
-          $permValue = 'sim';
-        } else {
-          $permValue = trim($value);
+    try {
+      foreach ($_POST['perm'] ?? [] as $deptId => $perms) {
+        foreach ($perms as $key => $value) {
+          $deptId = intval($deptId);
+          if ($deptId <= 0) continue;
+          
+          // Suportar checkboxes (sim/não) e radio buttons (múltiplas opções)
+          if (is_array($value)) {
+            // Se for array, provavelmente é um checkbox selecionado
+            $permValue = 'sim';
+          } else {
+            $permValue = trim($value);
+          }
+          
+          // Inserir ou atualizar a permissão
+          $stmt = $pdo->prepare('INSERT INTO department_permissions (department_id, permission_key, permission_value, permission_scope) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE permission_value=VALUES(permission_value), permission_scope=VALUES(permission_scope)');
+          $stmt->execute([$deptId, $key, $permValue, '[]']);
         }
-        
-        // Inserir ou atualizar a permissão
-        $stmt = $pdo->prepare('INSERT INTO department_permissions (department_id, permission_key, permission_value, permission_scope) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE permission_value=VALUES(permission_value), permission_scope=VALUES(permission_scope)');
-        $stmt->execute([$deptId, $key, $permValue, '[]']);
       }
+      header('Location: settings.php?tab=funcoes&success=1');
+      exit;
+    } catch (Exception $e) {
+      error_log('save_hierarchical_permissions error: ' . $e->getMessage());
+      $errors[] = 'Erro ao guardar permissões: ' . $e->getMessage();
     }
-    header('Location: settings.php?tab=funcoes&success=1');
-    exit;
   }
 
   // === PERMISSÕES (compatibilidade com antiga) ===
@@ -732,14 +754,6 @@ $loginBackgroundPath = getAssetPath($loginBackground);
   <?php if ($activeTab === 'funcoes'): ?>
     <?php 
       $departments = $pdo->query('SELECT * FROM departments ORDER BY name')->fetchAll();
-      
-      // Função auxiliar para carregar permissão
-      function getDeptPermission($pdo, $deptId, $key) {
-        $r = $pdo->prepare('SELECT permission_value, permission_scope FROM department_permissions WHERE department_id=? AND permission_key=?');
-        $r->execute([$deptId, $key]);
-        $row = $r->fetch();
-        return $row ? ['value'=>$row['permission_value'], 'scope'=>json_decode($row['permission_scope']??'[]', true)] : ['value'=>'', 'scope'=>[]];
-      }
     ?>
     <form method="post">
       <?php echo csrf_input(); ?>
