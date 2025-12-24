@@ -43,6 +43,38 @@ $smtp = [
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate();
 
+    // Eliminar imagens existentes (logo, favicon, fundo)
+    if (isset($_POST['delete_logo'])) {
+      $oldLogo = getSetting($pdo, 'site_logo');
+      if ($oldLogo) {
+        deleteOldFile($oldLogo);
+        setSetting($pdo, 'site_logo', '');
+        $message .= 'Logo removido com sucesso. ';
+      } else {
+        $errors[] = 'Não existe logo para remover.';
+      }
+    }
+    if (isset($_POST['delete_favicon'])) {
+      $oldFavicon = getSetting($pdo, 'favicon');
+      if ($oldFavicon) {
+        deleteOldFile($oldFavicon);
+        setSetting($pdo, 'favicon', '');
+        $message .= 'Favicon removido com sucesso. ';
+      } else {
+        $errors[] = 'Não existe favicon para remover.';
+      }
+    }
+    if (isset($_POST['delete_login_background'])) {
+      $oldBg = getSetting($pdo, 'login_background');
+      if ($oldBg) {
+        deleteOldFile($oldBg);
+        setSetting($pdo, 'login_background', '');
+        $message .= 'Imagem de fundo removida com sucesso. ';
+      } else {
+        $errors[] = 'Não existe imagem de fundo para remover.';
+      }
+    }
+
   // Garantir que os valores obrigatórios permanecem consistentes
   $posted = [
     'site_language' => $generalDefaults['site_language'],
@@ -340,6 +372,9 @@ $loginBackgroundPath = getAssetPath($loginBackground);
       <div style="margin-bottom:12px">
         <img src="<?php echo htmlspecialchars($siteLogoUrl); ?>?v=<?php echo time(); ?>" alt="Logo" style="max-width:150px;max-height:60px;border:1px solid #ddd;padding:4px;border-radius:4px">
         <p class="small" style="margin:8px 0 0 0">Ficheiro atual: <?php echo htmlspecialchars(basename($siteLogo)); ?></p>
+        <div style="margin-top:8px">
+          <button type="submit" name="delete_logo" value="1" class="btn" style="background:#c62828" onclick="return confirm('Tem a certeza que deseja eliminar o logo? Esta ação não pode ser desfeita.')">Eliminar Logo</button>
+        </div>
       </div>
     <?php endif; ?>
     
@@ -357,6 +392,9 @@ $loginBackgroundPath = getAssetPath($loginBackground);
       <div style="margin-bottom:12px">
         <img src="<?php echo htmlspecialchars($faviconUrl); ?>?v=<?php echo time(); ?>" alt="Favicon" style="width:32px;height:32px;border:1px solid #ddd;padding:2px;border-radius:4px">
         <p class="small" style="margin:8px 0 0 0">Ficheiro atual: <?php echo htmlspecialchars(basename($favicon)); ?></p>
+        <div style="margin-top:8px">
+          <button type="submit" name="delete_favicon" value="1" class="btn" style="background:#c62828" onclick="return confirm('Tem a certeza que deseja eliminar o favicon?')">Eliminar Favicon</button>
+        </div>
       </div>
     <?php endif; ?>
     
@@ -374,6 +412,9 @@ $loginBackgroundPath = getAssetPath($loginBackground);
       <div style="margin-bottom:12px">
         <img src="<?php echo htmlspecialchars($loginBackgroundUrl); ?>?v=<?php echo time(); ?>" alt="Background" style="max-width:200px;max-height:150px;border:1px solid #ddd;padding:4px;border-radius:4px;object-fit:cover">
         <p class="small" style="margin:8px 0 0 0">Ficheiro atual: <?php echo htmlspecialchars(basename($loginBackground)); ?></p>
+        <div style="margin-top:8px">
+          <button type="submit" name="delete_login_background" value="1" class="btn" style="background:#c62828" onclick="return confirm('Tem a certeza que deseja eliminar a imagem de fundo da página de login?')">Eliminar Imagem</button>
+        </div>
       </div>
     <?php endif; ?>
     
