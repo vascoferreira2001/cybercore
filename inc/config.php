@@ -1,23 +1,22 @@
 <?php
 // Configuração da base de dados - ajustar para produção
-// Preferir variáveis de ambiente; permitir fallback opcional via ficheiro não versionado.
+// Preferir ficheiro local não versionado; depois variáveis de ambiente; depois defaults.
 
-// Fallback opcional: se existir `inc/db_credentials.php`, incluir (não deve ser versionado)
+// 1. Tentar carregar ficheiro local (db_credentials.php)
 $credsFile = __DIR__ . '/db_credentials.php';
 if (file_exists($credsFile)) {
 	require_once $credsFile;
 }
 
-// Database settings (read from env, fallback to safe defaults)
+// 2. Se não estiver definido, usar variáveis de ambiente
 if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
 if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'cybercore');
 if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: 'cybercore');
-// Por segurança, evitar passwords hardcoded; usar env ou o ficheiro local.
 if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') ?: '');
 
-// Site settings
-define('SITE_NAME', getenv('SITE_NAME') ?: 'CyberCore - Área de Cliente');
-define('SITE_URL', getenv('SITE_URL') ?: 'http://localhost/cybercore');
+// 3. Configurações do site
+if (!defined('SITE_NAME')) define('SITE_NAME', getenv('SITE_NAME') ?: 'CyberCore - Área de Cliente');
+if (!defined('SITE_URL')) define('SITE_URL', getenv('SITE_URL') ?: 'http://localhost/cybercore');
 
 // SMTP / Mail settings - configure via env para produção
 define('SMTP_HOST', getenv('SMTP_HOST') ?: '');
