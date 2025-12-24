@@ -56,6 +56,178 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
   }
 
+  // === EQUIPA: Departamentos ===
+  if (isset($_POST['add_department'])) {
+    $name = trim($_POST['department_name'] ?? '');
+    if ($name !== '') {
+      $stmt = $pdo->prepare('INSERT IGNORE INTO departments (name, active) VALUES (?, 1)');
+      $stmt->execute([$name]);
+      header('Location: settings.php?tab=equipa&success=1');
+      exit;
+    }
+  }
+  if (isset($_POST['toggle_department'])) {
+    $id = intval($_POST['department_id'] ?? 0);
+    $newActive = intval($_POST['new_active'] ?? 1);
+    if ($id > 0) {
+      $stmt = $pdo->prepare('UPDATE departments SET active = ? WHERE id = ?');
+      $stmt->execute([$newActive, $id]);
+      header('Location: settings.php?tab=equipa&success=1');
+      exit;
+    }
+  }
+  if (isset($_POST['delete_department'])) {
+    $id = intval($_POST['department_id'] ?? 0);
+    if ($id > 0) {
+      $pdo->prepare('DELETE FROM department_permissions WHERE department_id = ?')->execute([$id]);
+      $pdo->prepare('DELETE FROM departments WHERE id = ?')->execute([$id]);
+      header('Location: settings.php?tab=equipa&success=1');
+      exit;
+    }
+  }
+
+  // === FUNÇÕES: Permissões por departamento ===
+  if (isset($_POST['save_dept_permissions'])) {
+    foreach ($_POST['perm'] ?? [] as $deptId => $byRes) {
+      foreach ($byRes as $res => $flags) {
+        $stmt = $pdo->prepare('INSERT INTO department_permissions (department_id, resource, can_view, can_edit, can_delete, can_operate) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE can_view=VALUES(can_view), can_edit=VALUES(can_edit), can_delete=VALUES(can_delete), can_operate=VALUES(can_operate)');
+        $stmt->execute([$deptId, $res, isset($flags['view'])?1:0, isset($flags['edit'])?1:0, isset($flags['delete'])?1:0, isset($flags['operate'])?1:0]);
+      }
+    }
+    header('Location: settings.php?tab=funcoes&success=1');
+    exit;
+  }
+
+  // === CLIENTE: Permissões ===
+  if (isset($_POST['save_client_permissions'])) {
+    $clientPermsKeys = ['view_invoices','pay_invoices','open_tickets','manage_domains','view_services','edit_profile'];
+    foreach ($clientPermsKeys as $k) {
+      $allowed = isset($_POST['client_perm'][$k]) ? 1 : 0;
+      $stmt = $pdo->prepare('INSERT INTO client_permissions (permission_key, allowed) VALUES (?, ?) ON DUPLICATE KEY UPDATE allowed = VALUES(allowed)');
+      $stmt->execute([$k, $allowed]);
+    }
+    header('Location: settings.php?tab=cliente&success=1');
+    exit;
+  }
+
+  // === EMPRESA: Dados da empresa ===
+  if (isset($_POST['save_company'])) {
+    $errors = [];
+    $fields = ['company_name','company_address','company_phone','company_email','company_website','company_nif'];
+    foreach ($fields as $f) {
+      setSetting($pdo, $f, trim($_POST[$f] ?? ''));
+    }
+    // Upload logo da empresa
+    if (!empty($_FILES['company_logo']) && $_FILES['company_logo']['error'] === UPLOAD_ERR_OK) {
+      $logoErrors = validateImageUpload($_FILES['company_logo'], 3000, ['jpg','jpeg','png']);
+      if (empty($logoErrors)) {
+        $old = getSetting($pdo, 'company_logo');
+        $new = saveUploadedFile($_FILES['company_logo']);
+        if ($new) {
+          setSetting($pdo, 'company_logo', $new);
+          deleteOldFile($old);
+        }
+      } else {
+        $errors = array_merge($errors, $logoErrors);
+      }
+    }
+    if (!empty($errors)) {
+      $message = implode(' ', $errors);
+      // Não redirecionar, mostrar erro
+    } else {
+      header('Location: settings.php?tab=empresa&success=1');
+      exit;
+    }
+  }
+
+  // === CATEGORIAS: Adicionar/Toggle/Remover ===
+  if (isset($_POST['add_category'])) {
+    $name = trim($_POST['category_name'] ?? '');
+    if ($name !== '') {
+      $stmt = $pdo->prepare('INSERT IGNORE INTO service_categories (name, active) VALUES (?, 1)');
+      $stmt->execute([$name]);
+      header('Location: settings.php?tab=categorias&success=1');
+      exit;
+    }
+  }
+  if (isset($_POST['toggle_category'])) {
+    $id = intval($_POST['category_id'] ?? 0);
+    $newActive = intval($_POST['new_active'] ?? 1);
+    if ($id > 0) {
+      $pdo->prepare('UPDATE service_categories SET active = ? WHERE id = ?')->execute([$newActive, $id]);
+      header('Location: settings.php?tab=categorias&success=1');
+      exit;
+    }
+  }
+  if (isset($_POST['delete_category'])) {
+    $id = intval($_POST['category_id'] ?? 0);
+    if ($id > 0) {
+      $pdo->prepare('DELETE FROM service_categories WHERE id = ?')->execute([$id]);
+      header('Location: settings.php?tab=categorias&success=1');
+      exit;
+    }
+  }
+
+  // === IMPOSTOS: Adicionar/Toggle/Remover ===
+  if (isset($_POST['add_tax'])) {
+    $name = trim($_POST['tax_name'] ?? '');
+    $rate = trim($_POST['tax_rate'] ?? '');
+    if ($name !== '' && is_numeric($rate)) {
+      $stmt = $pdo->prepare('INSERT INTO taxes (name, rate, active) VALUES (?, ?, 1)');
+      $stmt->execute([$name, $rate]);
+      header('Location: settings.php?tab=impostos&success=1');
+      exit;
+    }
+  }
+  if (isset($_POST['toggle_tax'])) {
+    $id = intval($_POST['tax_id'] ?? 0);
+    $newActive = intval($_POST['new_active'] ?? 1);
+    if ($id > 0) {
+      $pdo->prepare('UPDATE taxes SET active = ? WHERE id = ?')->execute([$newActive, $id]);
+      header('Location: settings.php?tab=impostos&success=1');
+      exit;
+    }
+  }
+  if (isset($_POST['delete_tax'])) {
+    $id = intval($_POST['tax_id'] ?? 0);
+    if ($id > 0) {
+      $pdo->prepare('DELETE FROM taxes WHERE id = ?')->execute([$id]);
+      header('Location: settings.php?tab=impostos&success=1');
+      exit;
+    }
+  }
+
+  // === MÉTODOS DE PAGAMENTO: Adicionar/Toggle/Remover ===
+  if (isset($_POST['add_method'])) {
+    $name = trim($_POST['method_name'] ?? '');
+    $gateway = trim($_POST['method_gateway'] ?? '');
+    if ($name !== '') {
+      $stmt = $pdo->prepare('INSERT INTO payment_methods (name, gateway, active) VALUES (?, ?, 1)');
+      $stmt->execute([$name, $gateway]);
+      header('Location: settings.php?tab=pagamentos&success=1');
+      exit;
+    }
+  }
+  if (isset($_POST['toggle_method'])) {
+    $id = intval($_POST['method_id'] ?? 0);
+    $newActive = intval($_POST['new_active'] ?? 1);
+    if ($id > 0) {
+      $pdo->prepare('UPDATE payment_methods SET active = ? WHERE id = ?')->execute([$newActive, $id]);
+      header('Location: settings.php?tab=pagamentos&success=1');
+      exit;
+    }
+  }
+  if (isset($_POST['delete_method'])) {
+    $id = intval($_POST['method_id'] ?? 0);
+    if ($id > 0) {
+      $pdo->prepare('DELETE FROM payment_methods WHERE id = ?')->execute([$id]);
+      header('Location: settings.php?tab=pagamentos&success=1');
+      exit;
+    }
+  }
+
+  // === ABAS GERAL/LOCALIZAÇÃO/EMAIL/CRON: só processar se não for ação específica das novas abas ===
+  
   // Eliminar imagens existentes (logo, favicon, fundo)
   if (isset($_POST['delete_logo'])) {
     $oldLogo = getSetting($pdo, 'site_logo');
@@ -88,129 +260,138 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 
-  // Garantir que os valores obrigatórios permanecem consistentes
-  $posted = [
-    'site_language' => $generalDefaults['site_language'],
-    'site_timezone' => $generalDefaults['site_timezone'],
-    'date_format' => $generalDefaults['date_format'],
-    'time_format' => $generalDefaults['time_format'],
-    'week_start' => $generalDefaults['week_start'],
-    'weekend_days' => $generalDefaults['weekend_days'],
-    'currency' => $generalDefaults['currency'],
-    'currency_symbol' => $generalDefaults['currency_symbol'],
-    'currency_position' => $generalDefaults['currency_position'],
-    'decimal_separator' => $generalDefaults['decimal_separator'],
-    'decimal_precision' => $generalDefaults['decimal_precision'],
-  ];
+  // Apenas processar configurações gerais/localization/email/cron se não houver ação específica
+  $isSpecificAction = isset($_POST['add_department']) || isset($_POST['toggle_department']) || isset($_POST['delete_department']) ||
+                      isset($_POST['save_dept_permissions']) || isset($_POST['save_client_permissions']) || isset($_POST['save_company']) ||
+                      isset($_POST['add_category']) || isset($_POST['toggle_category']) || isset($_POST['delete_category']) ||
+                      isset($_POST['add_tax']) || isset($_POST['toggle_tax']) || isset($_POST['delete_tax']) ||
+                      isset($_POST['add_method']) || isset($_POST['toggle_method']) || isset($_POST['delete_method']);
 
-  foreach ($posted as $key => $val) {
-    setSetting($pdo, $key, $val);
-  }
-  $generalSettings = getGeneralSettings($pdo);
-  $message .= 'Definições gerais atualizadas. ';
-  $shouldRedirect = true;
-
-  // Cron settings
-  $cronUrlPost = trim($_POST['cron_url'] ?? $cronUrl);
-  if (!$cronUrlPost) {
-    $cronUrlPost = $cronDefaultUrl;
-  }
-  if ($cronUrlPost && !filter_var($cronUrlPost, FILTER_VALIDATE_URL)) {
-    $errors[] = 'Cron URL inválida.';
-  } else {
-    setSetting($pdo, 'cron_url', $cronUrlPost);
-    $cronUrl = $cronUrlPost;
-  }
-  setSetting($pdo, 'cron_interval_minutes', '10');
-  $cronInterval = '10';
-
-  // SMTP settings
-  $smtpHost = trim($_POST['smtp_host'] ?? '');
-  $smtpPort = trim($_POST['smtp_port'] ?? '');
-  $smtpUser = trim($_POST['smtp_user'] ?? '');
-  $smtpPass = trim($_POST['smtp_pass'] ?? '');
-  $smtpSecure = trim($_POST['smtp_secure'] ?? 'tls');
-  $smtpFrom = trim($_POST['smtp_from'] ?? '');
-  $smtpFromName = trim($_POST['smtp_from_name'] ?? '');
-
-  if ($smtpPort !== '' && !ctype_digit($smtpPort)) {
-    $errors[] = 'Porta SMTP deve ser numérica.';
-  }
-  if ($smtpSecure && !in_array($smtpSecure, ['tls', 'ssl', 'none'], true)) {
-    $errors[] = 'Tipo de segurança SMTP inválido.';
-  }
-  if ($smtpFrom && !filter_var($smtpFrom, FILTER_VALIDATE_EMAIL)) {
-    $errors[] = 'Email de remetente inválido.';
-  }
-
-  if (empty($errors)) {
-    $smtpToSave = [
-      'smtp_host' => $smtpHost,
-      'smtp_port' => $smtpPort ?: '587',
-      'smtp_user' => $smtpUser,
-      'smtp_pass' => $smtpPass,
-      'smtp_secure' => $smtpSecure ?: 'tls',
-      'smtp_from' => $smtpFrom ?: $smtp['smtp_from'],
-      'smtp_from_name' => $smtpFromName ?: $smtp['smtp_from_name'],
+  if (!$isSpecificAction) {
+    // Garantir que os valores obrigatórios permanecem consistentes
+    $posted = [
+      'site_language' => $generalDefaults['site_language'],
+      'site_timezone' => $generalDefaults['site_timezone'],
+      'date_format' => $generalDefaults['date_format'],
+      'time_format' => $generalDefaults['time_format'],
+      'week_start' => $generalDefaults['week_start'],
+      'weekend_days' => $generalDefaults['weekend_days'],
+      'currency' => $generalDefaults['currency'],
+      'currency_symbol' => $generalDefaults['currency_symbol'],
+      'currency_position' => $generalDefaults['currency_position'],
+      'decimal_separator' => $generalDefaults['decimal_separator'],
+      'decimal_precision' => $generalDefaults['decimal_precision'],
     ];
-    foreach ($smtpToSave as $k => $v) {
-      setSetting($pdo, $k, $v);
-    }
-    $smtp = $smtpToSave;
-    $message .= 'Configurações SMTP guardadas. ';
-  }
 
-  // Processar upload de imagens
-  if (!empty($_FILES['site_logo']) && $_FILES['site_logo']['error'] === UPLOAD_ERR_OK) {
-    $logoErrors = validateImageUpload($_FILES['site_logo'], 2000, ['jpg', 'jpeg', 'png']);
-    if (empty($logoErrors)) {
-      $oldLogo = getSetting($pdo, 'site_logo');
-      $newLogo = saveUploadedFile($_FILES['site_logo']);
-      if ($newLogo) {
-        setSetting($pdo, 'site_logo', $newLogo);
-        deleteOldFile($oldLogo);
-        $message .= 'Logo atualizado com sucesso. ';
-      }
-    } else {
-      $errors = array_merge($errors, $logoErrors);
+    foreach ($posted as $key => $val) {
+      setSetting($pdo, $key, $val);
     }
-  }
-    
-  if (!empty($_FILES['favicon']) && $_FILES['favicon']['error'] === UPLOAD_ERR_OK) {
-    $faviconErrors = validateImageUpload($_FILES['favicon'], 500, ['jpg', 'jpeg', 'png']);
-    if (empty($faviconErrors)) {
-      $oldFavicon = getSetting($pdo, 'favicon');
-      $newFavicon = saveUploadedFile($_FILES['favicon']);
-      if ($newFavicon) {
-        setSetting($pdo, 'favicon', $newFavicon);
-        deleteOldFile($oldFavicon);
-        $message .= 'Favicon atualizado com sucesso. ';
-      }
-    } else {
-      $errors = array_merge($errors, $faviconErrors);
-    }
-  }
-    
-  if (!empty($_FILES['login_background']) && $_FILES['login_background']['error'] === UPLOAD_ERR_OK) {
-    $bgErrors = validateImageUpload($_FILES['login_background'], 5000, ['jpg', 'jpeg', 'png']);
-    if (empty($bgErrors)) {
-      $oldBg = getSetting($pdo, 'login_background');
-      $newBg = saveUploadedFile($_FILES['login_background']);
-      if ($newBg) {
-        setSetting($pdo, 'login_background', $newBg);
-        deleteOldFile($oldBg);
-        $message .= 'Imagem de fundo atualizada com sucesso. ';
-      }
-    } else {
-      $errors = array_merge($errors, $bgErrors);
-    }
-  }
+    $generalSettings = getGeneralSettings($pdo);
+    $message .= 'Definições gerais atualizadas. ';
+    $shouldRedirect = true;
 
-  // Registar log e redirecionar se aplicável
-  if ($message && empty($errors) && $shouldRedirect && !isset($_POST['send_test'])) {
-    $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$user['id'],'settings_update','Settings updated']);
-    header('Location: settings.php?tab=' . $activeTab . '&success=1');
-    exit;
+    // Cron settings
+    $cronUrlPost = trim($_POST['cron_url'] ?? $cronUrl);
+    if (!$cronUrlPost) {
+      $cronUrlPost = $cronDefaultUrl;
+    }
+    if ($cronUrlPost && !filter_var($cronUrlPost, FILTER_VALIDATE_URL)) {
+      $errors[] = 'Cron URL inválida.';
+    } else {
+      setSetting($pdo, 'cron_url', $cronUrlPost);
+      $cronUrl = $cronUrlPost;
+    }
+    setSetting($pdo, 'cron_interval_minutes', '10');
+    $cronInterval = '10';
+
+    // SMTP settings
+    $smtpHost = trim($_POST['smtp_host'] ?? '');
+    $smtpPort = trim($_POST['smtp_port'] ?? '');
+    $smtpUser = trim($_POST['smtp_user'] ?? '');
+    $smtpPass = trim($_POST['smtp_pass'] ?? '');
+    $smtpSecure = trim($_POST['smtp_secure'] ?? 'tls');
+    $smtpFrom = trim($_POST['smtp_from'] ?? '');
+    $smtpFromName = trim($_POST['smtp_from_name'] ?? '');
+
+    if ($smtpPort !== '' && !ctype_digit($smtpPort)) {
+      $errors[] = 'Porta SMTP deve ser numérica.';
+    }
+    if ($smtpSecure && !in_array($smtpSecure, ['tls', 'ssl', 'none'], true)) {
+      $errors[] = 'Tipo de segurança SMTP inválido.';
+    }
+    if ($smtpFrom && !filter_var($smtpFrom, FILTER_VALIDATE_EMAIL)) {
+      $errors[] = 'Email de remetente inválido.';
+    }
+
+    if (empty($errors)) {
+      $smtpToSave = [
+        'smtp_host' => $smtpHost,
+        'smtp_port' => $smtpPort ?: '587',
+        'smtp_user' => $smtpUser,
+        'smtp_pass' => $smtpPass,
+        'smtp_secure' => $smtpSecure ?: 'tls',
+        'smtp_from' => $smtpFrom ?: $smtp['smtp_from'],
+        'smtp_from_name' => $smtpFromName ?: $smtp['smtp_from_name'],
+      ];
+      foreach ($smtpToSave as $k => $v) {
+        setSetting($pdo, $k, $v);
+      }
+      $smtp = $smtpToSave;
+      $message .= 'Configurações SMTP guardadas. ';
+    }
+
+    // Processar upload de imagens
+    if (!empty($_FILES['site_logo']) && $_FILES['site_logo']['error'] === UPLOAD_ERR_OK) {
+      $logoErrors = validateImageUpload($_FILES['site_logo'], 2000, ['jpg', 'jpeg', 'png']);
+      if (empty($logoErrors)) {
+        $oldLogo = getSetting($pdo, 'site_logo');
+        $newLogo = saveUploadedFile($_FILES['site_logo']);
+        if ($newLogo) {
+          setSetting($pdo, 'site_logo', $newLogo);
+          deleteOldFile($oldLogo);
+          $message .= 'Logo atualizado com sucesso. ';
+        }
+      } else {
+        $errors = array_merge($errors, $logoErrors);
+      }
+    }
+      
+    if (!empty($_FILES['favicon']) && $_FILES['favicon']['error'] === UPLOAD_ERR_OK) {
+      $faviconErrors = validateImageUpload($_FILES['favicon'], 500, ['jpg', 'jpeg', 'png']);
+      if (empty($faviconErrors)) {
+        $oldFavicon = getSetting($pdo, 'favicon');
+        $newFavicon = saveUploadedFile($_FILES['favicon']);
+        if ($newFavicon) {
+          setSetting($pdo, 'favicon', $newFavicon);
+          deleteOldFile($oldFavicon);
+          $message .= 'Favicon atualizado com sucesso. ';
+        }
+      } else {
+        $errors = array_merge($errors, $faviconErrors);
+      }
+    }
+      
+    if (!empty($_FILES['login_background']) && $_FILES['login_background']['error'] === UPLOAD_ERR_OK) {
+      $bgErrors = validateImageUpload($_FILES['login_background'], 5000, ['jpg', 'jpeg', 'png']);
+      if (empty($bgErrors)) {
+        $oldBg = getSetting($pdo, 'login_background');
+        $newBg = saveUploadedFile($_FILES['login_background']);
+        if ($newBg) {
+          setSetting($pdo, 'login_background', $newBg);
+          deleteOldFile($oldBg);
+          $message .= 'Imagem de fundo atualizada com sucesso. ';
+        }
+      } else {
+        $errors = array_merge($errors, $bgErrors);
+      }
+    }
+
+    // Registar log e redirecionar se aplicável
+    if ($message && empty($errors) && $shouldRedirect && !isset($_POST['send_test'])) {
+      $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$user['id'],'settings_update','Settings updated']);
+      header('Location: settings.php?tab=' . $activeTab . '&success=1');
+      exit;
+    }
   }
 }
 
@@ -472,29 +653,6 @@ $loginBackgroundPath = getAssetPath($loginBackground);
   <!-- TAB: EQUIPA (Departamentos) -->
   <?php if ($activeTab === 'equipa'): ?>
     <?php 
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_department'])) {
-        $name = trim($_POST['department_name'] ?? '');
-        if ($name !== '') {
-          $stmt = $pdo->prepare('INSERT IGNORE INTO departments (name, active) VALUES (?, 1)');
-          $stmt->execute([$name]);
-          echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Departamento adicionado.</div>';
-        }
-      }
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_department'])) {
-        $id = intval($_POST['department_id'] ?? 0);
-        $newActive = intval($_POST['new_active'] ?? 1);
-        if ($id > 0) {
-          $stmt = $pdo->prepare('UPDATE departments SET active = ? WHERE id = ?');
-          $stmt->execute([$newActive, $id]);
-        }
-      }
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_department'])) {
-        $id = intval($_POST['department_id'] ?? 0);
-        if ($id > 0) {
-          $pdo->prepare('DELETE FROM department_permissions WHERE department_id = ?')->execute([$id]);
-          $pdo->prepare('DELETE FROM departments WHERE id = ?')->execute([$id]);
-        }
-      }
       $departments = $pdo->query('SELECT * FROM departments ORDER BY name')->fetchAll();
     ?>
     <form method="post">
@@ -550,15 +708,6 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     <?php 
       $departments = $pdo->query('SELECT * FROM departments ORDER BY name')->fetchAll();
       $resources = ['dashboard','tickets','customers','services','finance','settings','reports'];
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_dept_permissions'])) {
-        foreach ($_POST['perm'] ?? [] as $deptId => $byRes) {
-          foreach ($byRes as $res => $flags) {
-            $stmt = $pdo->prepare('INSERT INTO department_permissions (department_id, resource, can_view, can_edit, can_delete, can_operate) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE can_view=VALUES(can_view), can_edit=VALUES(can_edit), can_delete=VALUES(can_delete), can_operate=VALUES(can_operate)');
-            $stmt->execute([$deptId, $res, isset($flags['view'])?1:0, isset($flags['edit'])?1:0, isset($flags['delete'])?1:0, isset($flags['operate'])?1:0]);
-          }
-        }
-        echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Permissões da equipa atualizadas.</div>';
-      }
       // Carregar permissões atuais
       $perms = [];
       $rows = $pdo->query('SELECT * FROM department_permissions')->fetchAll();
@@ -608,14 +757,6 @@ $loginBackgroundPath = getAssetPath($loginBackground);
   <?php if ($activeTab === 'cliente'): ?>
     <?php 
       $clientPermsKeys = ['view_invoices','pay_invoices','open_tickets','manage_domains','view_services','edit_profile'];
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_client_permissions'])) {
-        foreach ($clientPermsKeys as $k) {
-          $allowed = isset($_POST['client_perm'][$k]) ? 1 : 0;
-          $stmt = $pdo->prepare('INSERT INTO client_permissions (permission_key, allowed) VALUES (?, ?) ON DUPLICATE KEY UPDATE allowed = VALUES(allowed)');
-          $stmt->execute([$k, $allowed]);
-        }
-        echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Permissões dos clientes atualizadas.</div>';
-      }
       $rows = $pdo->query('SELECT * FROM client_permissions')->fetchAll();
       $permMap = [];
       foreach ($rows as $r) $permMap[$r['permission_key']] = (int)$r['allowed'];
@@ -637,33 +778,6 @@ $loginBackgroundPath = getAssetPath($loginBackground);
   <!-- TAB: EMPRESA -->
   <?php if ($activeTab === 'empresa'): ?>
     <?php 
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_company'])) {
-        $errors = [];
-        $fields = ['company_name','company_address','company_phone','company_email','company_website','company_nif'];
-        foreach ($fields as $f) {
-          setSetting($pdo, $f, trim($_POST[$f] ?? ''));
-        }
-        // Upload logo da empresa
-        if (!empty($_FILES['company_logo']) && $_FILES['company_logo']['error'] === UPLOAD_ERR_OK) {
-          $logoErrors = validateImageUpload($_FILES['company_logo'], 3000, ['jpg','jpeg','png']);
-          if (empty($logoErrors)) {
-            $old = getSetting($pdo, 'company_logo');
-            $new = saveUploadedFile($_FILES['company_logo']);
-            if ($new) {
-              setSetting($pdo, 'company_logo', $new);
-              deleteOldFile($old);
-            }
-          } else {
-            $errors = array_merge($errors, $logoErrors);
-          }
-        }
-        if (!empty($errors)) {
-          echo '<div style="background:#ffebee;color:#c62828;padding:12px;border-radius:4px;margin-bottom:16px">'
-             . htmlspecialchars(implode(' ', $errors)) . '</div>';
-        } else {
-          echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Dados da empresa guardados.</div>';
-        }
-      }
       $company = [
         'company_name' => getSetting($pdo, 'company_name'),
         'company_address' => getSetting($pdo, 'company_address'),
@@ -698,27 +812,6 @@ $loginBackgroundPath = getAssetPath($loginBackground);
   <!-- TAB: CATEGORIAS DE SERVIÇOS -->
   <?php if ($activeTab === 'categorias'): ?>
     <?php 
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_category'])) {
-        $name = trim($_POST['category_name'] ?? '');
-        if ($name !== '') {
-          $stmt = $pdo->prepare('INSERT IGNORE INTO service_categories (name, active) VALUES (?, 1)');
-          $stmt->execute([$name]);
-          echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Categoria criada.</div>';
-        }
-      }
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_category'])) {
-        $id = intval($_POST['category_id'] ?? 0);
-        $newActive = intval($_POST['new_active'] ?? 1);
-        if ($id > 0) {
-          $pdo->prepare('UPDATE service_categories SET active = ? WHERE id = ?')->execute([$newActive, $id]);
-        }
-      }
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_category'])) {
-        $id = intval($_POST['category_id'] ?? 0);
-        if ($id > 0) {
-          $pdo->prepare('DELETE FROM service_categories WHERE id = ?')->execute([$id]);
-        }
-      }
       $cats = $pdo->query('SELECT * FROM service_categories ORDER BY name')->fetchAll();
     ?>
     <form method="post">
@@ -767,28 +860,6 @@ $loginBackgroundPath = getAssetPath($loginBackground);
   <!-- TAB: IMPOSTOS -->
   <?php if ($activeTab === 'impostos'): ?>
     <?php 
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_tax'])) {
-        $name = trim($_POST['tax_name'] ?? '');
-        $rate = trim($_POST['tax_rate'] ?? '');
-        if ($name !== '' && is_numeric($rate)) {
-          $stmt = $pdo->prepare('INSERT INTO taxes (name, rate, active) VALUES (?, ?, 1)');
-          $stmt->execute([$name, $rate]);
-          echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Imposto adicionado.</div>';
-        }
-      }
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_tax'])) {
-        $id = intval($_POST['tax_id'] ?? 0);
-        $newActive = intval($_POST['new_active'] ?? 1);
-        if ($id > 0) {
-          $pdo->prepare('UPDATE taxes SET active = ? WHERE id = ?')->execute([$newActive, $id]);
-        }
-      }
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_tax'])) {
-        $id = intval($_POST['tax_id'] ?? 0);
-        if ($id > 0) {
-          $pdo->prepare('DELETE FROM taxes WHERE id = ?')->execute([$id]);
-        }
-      }
       $taxes = $pdo->query('SELECT * FROM taxes ORDER BY name')->fetchAll();
     ?>
     <form method="post">
@@ -842,28 +913,6 @@ $loginBackgroundPath = getAssetPath($loginBackground);
   <!-- TAB: MÉTODOS DE PAGAMENTO -->
   <?php if ($activeTab === 'pagamentos'): ?>
     <?php 
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_method'])) {
-        $name = trim($_POST['method_name'] ?? '');
-        $gateway = trim($_POST['method_gateway'] ?? '');
-        if ($name !== '') {
-          $stmt = $pdo->prepare('INSERT INTO payment_methods (name, gateway, active) VALUES (?, ?, 1)');
-          $stmt->execute([$name, $gateway]);
-          echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Método de pagamento adicionado.</div>';
-        }
-      }
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_method'])) {
-        $id = intval($_POST['method_id'] ?? 0);
-        $newActive = intval($_POST['new_active'] ?? 1);
-        if ($id > 0) {
-          $pdo->prepare('UPDATE payment_methods SET active = ? WHERE id = ?')->execute([$newActive, $id]);
-        }
-      }
-      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_method'])) {
-        $id = intval($_POST['method_id'] ?? 0);
-        if ($id > 0) {
-          $pdo->prepare('DELETE FROM payment_methods WHERE id = ?')->execute([$id]);
-        }
-      }
       $methods = $pdo->query('SELECT * FROM payment_methods ORDER BY name')->fetchAll();
     ?>
     <form method="post">
@@ -875,7 +924,7 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     </form>
     <div style="margin-top:16px">
       <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:#f7f7f7"><th style="padding:8px;border:1px solid #ddd">Método</th><th style="padding:8px;border:1px solid #ddd">Gateway</th><th style="padding:8px;border:1px solid #ddd">Estado</th></tr></thead>
+        <thead><tr style="background:#f7f7f7"><th style="padding:8px;border:1px solid #ddd">Método</th><th style="padding:8px;border:1px solid #ddd">Gateway</th><th style="padding:8px;border:1px solid #ddd">Estado</th><th style="padding:8px;border:1px solid #ddd">Ações</th></tr></thead>
         <tbody>
           <?php foreach ($methods as $m): ?>
             <tr>
