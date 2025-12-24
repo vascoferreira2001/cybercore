@@ -39,8 +39,8 @@ cat > inc/db_credentials.php << 'EOF'
 define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'cybercore');
 define('DB_USER', 'cybercore');
-define('DB_PASS', 'sua_password_aqui');
-define('SITE_URL', 'https://seu-dominio.com');
+define('DB_PASS', 'RPd3knB&ofbh8g9_');
+define('SITE_URL', 'https://cybercore.cyberworld.pt/');
 define('SITE_NAME', 'CyberCore - Área de Cliente');
 ?>
 EOF
@@ -52,34 +52,11 @@ chmod 640 inc/db_credentials.php
 cat inc/db_credentials.php
 ```
 
-**⚠️ IMPORTANTE:** `inc/db_credentials.php` **NÃO deve estar no Git**. Está no `.gitignore`.
+**Nota:** `inc/db_credentials.php` está versionado neste repositório privado e protegido via `inc/.htaccess` contra acesso via browser.
 
-### Opção 1.1: Bootstrap automático (recomendado)
+### Credenciais já incluídas
 
-Se preferir automatizar a criação do ficheiro de credenciais (a partir de variáveis de ambiente ou por perguntas interativas), use o script:
-
-```bash
-php scripts/bootstrap_credentials.php
-```
-
-O script irá:
-- Ler `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `SITE_URL`, `SITE_NAME` do ambiente (se existirem)
-- Perguntar no terminal (modo interativo) caso faltem valores
-- Gerar `inc/db_credentials.php` e definir permissões `640`
-
-### Opção 1.2: Via Composer (auto)
-
-Se usar Composer, o projeto já executa o bootstrap automaticamente após `install` ou `update`:
-
-```bash
-composer install
-```
-
-Isto cria `inc/db_credentials.php` se ainda não existir. Para atualizar credenciais, pode correr:
-
-```bash
-composer update
-```
+Este repositório privado já inclui `inc/db_credentials.php` com as credenciais de produção. Basta fazer deploy.
 
 ### Opção 2: Variáveis de Ambiente
 
@@ -89,8 +66,8 @@ Se preferir não usar ficheiro local:
 export DB_HOST=127.0.0.1
 export DB_NAME=cybercore
 export DB_USER=cybercore
-export DB_PASS='sua_password_aqui'
-export SITE_URL='https://seu-dominio.com'
+export DB_PASS='RPd3knB&ofbh8g9_'
+export SITE_URL='https://cybercore.cyberworld.pt/'
 export SITE_NAME='CyberCore - Área de Cliente'
 export SMTP_HOST='smtp.seu-dominio.com'
 export SMTP_PORT=587
