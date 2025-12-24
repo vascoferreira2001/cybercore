@@ -12,6 +12,18 @@ if (!in_array($user['role'], ['Gestor','Suporte ao Cliente','Suporte Técnica','
     exit;
 }
 
+// Função safeCount (definir ANTES de usar)
+function safeCount($pdo, $sql, $params = []) {
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log('Dashboard metric error: ' . $e->getMessage());
+        return 0;
+    }
+}
+
 $pdo = getDB();
 
 // Métricas conforme role
@@ -30,17 +42,6 @@ if ($user['role'] === 'Gestor') {
     $metrics['open_tickets'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'open'");
     $metrics['pending_tickets'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'pending'");
     $metrics['total_clients'] = safeCount($pdo, 'SELECT COUNT(*) FROM users WHERE role = "Cliente"');
-}
-
-function safeCount($pdo, $sql, $params = []) {
-    try {
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        return (int)$stmt->fetchColumn();
-    } catch (PDOException $e) {
-        error_log('Dashboard metric error: ' . $e->getMessage());
-        return 0;
-    }
 }
 ?>
 <?php include __DIR__ . '/../inc/header.php'; ?>

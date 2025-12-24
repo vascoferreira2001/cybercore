@@ -1,6 +1,5 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/debug.php';
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/db.php';
@@ -11,38 +10,32 @@ header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-// Carregar logo e favicon com tratamento de erro
-$siteLogo = '';
-$favicon = '';
+// Carregar logo e favicon - versão simplificada sem dependências
 $siteLogoUrl = '';
-$faviconUrl = '';
 $siteLogoPath = '';
+$faviconUrl = '';
 $faviconPath = '';
 
 try {
-  $pdo = getDB();
-  if ($pdo) {
-    $siteLogo = getSetting($pdo, 'site_logo', '');
-    $favicon = getSetting($pdo, 'favicon', '');
-    
-    // Construir URLs simples
-    if ($siteLogo) {
-      $siteLogoUrl = (strpos($siteLogo, '/') === 0) ? $siteLogo : '/' . $siteLogo;
-      $siteLogoPath = $_SERVER['DOCUMENT_ROOT'] . $siteLogoUrl;
-    }
-    if ($favicon) {
-      $faviconUrl = (strpos($favicon, '/') === 0) ? $favicon : '/' . $favicon;
-      $faviconPath = $_SERVER['DOCUMENT_ROOT'] . $faviconUrl;
+  if (isset($pdo) || function_exists('getDB')) {
+    if (!isset($pdo)) $pdo = getDB();
+    if ($pdo) {
+      $siteLogo = getSetting($pdo, 'site_logo', '');
+      $favicon = getSetting($pdo, 'favicon', '');
+      
+      if ($siteLogo) {
+        $siteLogoUrl = (strpos($siteLogo, '/') === 0) ? $siteLogo : '/' . $siteLogo;
+        $siteLogoPath = $_SERVER['DOCUMENT_ROOT'] . $siteLogoUrl;
+      }
+      if ($favicon) {
+        $faviconUrl = (strpos($favicon, '/') === 0) ? $favicon : '/' . $favicon;
+        $faviconPath = $_SERVER['DOCUMENT_ROOT'] . $faviconUrl;
+      }
     }
   }
 } catch (Exception $e) {
-  logError('Header asset loading error: ' . $e->getMessage());
+  // Silenciosamente falha - logo e favicon vazios
 }
-
-// Determinar se está em admin para ajustar URLs
-$inAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
-$baseUrl = $inAdmin ? '/admin' : '';
-$adminUrl = $inAdmin ? '' : '/admin';
 ?>
 <!doctype html>
 <html lang="pt">
@@ -75,7 +68,7 @@ $adminUrl = $inAdmin ? '' : '/admin';
     <?php endif; ?>
     <nav class="sidebar-nav">
       <!-- Menu para: Gestor, Suporte ao Cliente, Suporte Técnica, Suporte Financeira -->
-      <?php if(in_array($cu['role'], ['Gestor','Suporte ao Cliente','Suporte Técnica','Suporte Financeira'])): ?>
+      <?php if($cu && in_array($cu['role'], ['Gestor','Suporte ao Cliente','Suporte Técnica','Suporte Financeira'])): ?>
 
         <!-- Painel -->
         <a href="/admin/dashboard.php" class="nav-item">
@@ -146,7 +139,7 @@ $adminUrl = $inAdmin ? '' : '/admin';
         </div>
 
         <!-- Suporte Financeiro (submenu) - Apenas Gestor e Suporte Financeira -->
-        <?php if(in_array($cu['role'], ['Gestor','Suporte Financeira'])): ?>
+        <?php if($cu && in_array($cu['role'], ['Gestor','Suporte Financeira'])): ?>
         <div class="nav-group">
           <a href="#" class="nav-item submenu-toggle" data-submenu="finance" onclick="toggleSubmenu(event, 'finance')">
             <span class="icon">💰</span> Suporte Financeiro <span class="arrow">▼</span>
@@ -157,10 +150,9 @@ $adminUrl = $inAdmin ? '' : '/admin';
           </div>
         </div>
         <?php endif; ?>
-        <?php endif; ?>
 
         <!-- Configuração (submenu) - Apenas Gestor -->
-        <?php if($cu['role'] === 'Gestor'): ?>
+        <?php if($cu && $cu['role'] === 'Gestor'): ?>
         <div class="nav-group">
           <a href="#" class="nav-item submenu-toggle" data-submenu="settings" onclick="toggleSubmenu(event, 'settings')">
             <span class="icon">⚙️</span> Configuração <span class="arrow">▼</span>
