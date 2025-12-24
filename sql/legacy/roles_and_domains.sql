@@ -1,9 +1,4 @@
--- ⚠️ NÃO IMPORTAR DIRETAMENTE - FICHEIRO LEGACY ⚠️
--- Este ficheiro é apenas para referência.
--- Use sql/schema.sql para instalação limpa.
--- Importar este ficheiro causará erro #1060 (coluna duplicada).
-
--- Legacy: moved into consolidated schema.sql
+-- Alterar tabela users para incluir role e criar tabela de domains
 USE cybercore;
 
 ALTER TABLE users

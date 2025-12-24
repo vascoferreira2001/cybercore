@@ -44,7 +44,7 @@ try {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?php echo SITE_NAME; ?></title>
-  <link rel="stylesheet" href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../css/style.css' : 'css/style.css'; ?>">
+  <link rel="stylesheet" href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../assets/css/style.css' : 'assets/css/style.css'; ?>">
   <?php if ($faviconPath && file_exists($faviconPath)): ?>
     <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($faviconUrl); ?>?v=<?php echo time(); ?>">
   <?php endif; ?>

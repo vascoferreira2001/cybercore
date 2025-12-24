@@ -111,7 +111,7 @@ function validateImageUpload($file, $maxSizeKB = 5000, $allowedFormats = ['jpg',
 }
 
 // Guardar ficheiro de upload
-function saveUploadedFile($file, $uploadDir = 'uploads/') {
+function saveUploadedFile($file, $uploadDir = 'assets/uploads/') {
     $docRoot = $_SERVER['DOCUMENT_ROOT'];
     $fullUploadDir = $docRoot . '/' . ltrim($uploadDir, '/');
     

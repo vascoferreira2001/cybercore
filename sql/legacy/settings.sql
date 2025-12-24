@@ -1,9 +1,3 @@
--- ⚠️ NÃO IMPORTAR DIRETAMENTE - FICHEIRO LEGACY ⚠️
--- Este ficheiro é apenas para referência.
--- Use sql/schema.sql para instalação limpa.
-
--- Legacy: moved into consolidated schema.sql
-
 -- Tabela para guardar configurações do website
 CREATE TABLE IF NOT EXISTS settings (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -58,7 +52,7 @@ INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
 ('maintenance_exception_roles', 'Gestor'),
 ('maintenance_hide_menus', '[]');
 
--- Tabelas auxiliares
+-- Tabelas de permissões e estrutura de negócio
 CREATE TABLE IF NOT EXISTS departments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL UNIQUE,
@@ -89,6 +83,7 @@ CREATE TABLE IF NOT EXISTS client_permissions (
   allowed TINYINT(1) DEFAULT 0
 );
 
+-- Permissões de Cliente por defeito
 INSERT IGNORE INTO client_permissions (permission_key, allowed) VALUES
 ('disable_account_creation', 0),
 ('verify_email_before_login', 0),

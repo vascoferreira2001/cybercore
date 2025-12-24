@@ -129,7 +129,7 @@ Ver instruções detalhadas: [INSTALL.md](INSTALL.md)
 Migração local (dev, opcional):
 
 ```bash
-php migrate.php
+php scripts/migrate.php
 ```
 
 `schema.sql` inclui todas as tabelas e seeds (settings, manutenção, permissões, serviços, changelog).
@@ -137,7 +137,7 @@ php migrate.php
 ### Criar Utilizadores de Teste
 
 ```bash
-php sample_users.php
+php scripts/sample_users.php
 ```
 
 Cria utilizadores de teste com password `Password123!`:
@@ -151,35 +151,40 @@ Cria utilizadores de teste com password `Password123!`:
 
 ```
 .
-├── inc/
-│   ├── auth.php          # Autenticação e sessões
-│   ├── config.php        # Configuração (env/ficheiro)
-│   ├── csrf.php          # Tokens CSRF
-│   ├── db.php            # Conexão PDO
-│   ├── header.php        # Cabeçalho/navegação
-│   ├── footer.php        # Rodapé
-│   └── mailer.php        # Envio de emails
+├── admin/            # Área administrativa
+│   ├── dashboard.php, customers.php, settings.php, etc.
+├── assets/           # Assets públicos
+│   ├── css/
+│   │   └── style.css
+│   ├── js/
+│   │   └── app.js
+│   └── uploads/      # Ficheiros carregados
+├── inc/              # Lógica reutilizável
+│   ├── auth.php
+│   ├── config.php
+│   ├── csrf.php
+│   ├── db.php
+│   ├── header.php
+│   ├── footer.php
+│   ├── mailer.php
+│   ├── permissions.php
+│   └── settings.php
 ├── sql/
-│   ├── schema.sql        # ESQUEMA CONSOLIDADO (usar este)
-│   └── legacy/           # Scripts antigos (referência, não usar)
-├── js/
-│   └── app.js            # Validação cliente simples
-├── css/
-│   └── style.css         # Estilos básicos
-├── login.php
+│   ├── schema.sql    # ÚNICO ficheiro SQL a usar
+│   └── legacy/       # Referência histórica
+├── scripts/          # Utilitários
+│   ├── migrate.php
+│   └── sample_users.php
+├── docs/             # Documentação
+│   ├── INSTALL.md
+│   └── PERMISSIONS_GUIDE.md
+├── login.php         # Páginas públicas na raiz
 ├── register.php
 ├── dashboard.php
 ├── support.php
 ├── domains.php
-├── domains_edit.php
 ├── finance.php
 ├── logs.php
-├── manage_users.php (descontinuado)
-├── forgot_password.php
-├── reset_password.php
-├── logout.php
-├── migrate.php           # Migração (dev only)
-├── sample_users.php      # Criar users de teste (dev only)
 └── README.md
 ```
 

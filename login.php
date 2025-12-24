@@ -66,7 +66,7 @@ if ($loginBackground && file_exists($backgroundPath)) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Login - CyberCore</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body style="<?php echo $backgroundStyle; ?>">
 <?php if ($maintenanceDisabled): ?>

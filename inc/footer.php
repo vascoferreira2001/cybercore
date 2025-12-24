@@ -1,6 +1,6 @@
   </main>
 </div>
-<script src="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../' : ''; ?>js/app.js"></script>
+<script src="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../' : ''; ?>assets/js/app.js"></script>
 
 <?php
 // Footer - versão simplificada

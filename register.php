@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Registo - CyberCore</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 <?php if ($maintenanceDisabled): ?>
@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="small">Já tem conta? <a href="login.php">Entrar</a></div>
   </div>
 </main>
-<script src="js/app.js"></script>
+<script src="assets/js/app.js"></script>
 <script>
   (function(){
     var select = document.querySelector('select[name="entity_type"]');

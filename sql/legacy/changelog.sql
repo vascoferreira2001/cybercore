@@ -1,8 +1,4 @@
--- ⚠️ NÃO IMPORTAR DIRETAMENTE - FICHEIRO LEGACY ⚠️
--- Este ficheiro é apenas para referência.
--- Use sql/schema.sql para instalação limpa.
-
--- Legacy: moved into consolidated schema.sql
+-- Tabela de changelog para rastrear atualizações do sistema
 CREATE TABLE IF NOT EXISTS changelog (
     id INT AUTO_INCREMENT PRIMARY KEY,
     version VARCHAR(50) NOT NULL,
@@ -15,6 +11,7 @@ CREATE TABLE IF NOT EXISTS changelog (
     INDEX idx_date (release_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT IGNORE INTO changelog (version, title, description, release_date) VALUES 
+-- Inserir primeira versão
+INSERT INTO changelog (version, title, description, release_date) VALUES 
 ('1.0.0', 'Versão Inicial', 'Lançamento inicial do CyberCore com funcionalidades de autenticação, gestão de clientes e painel administrativo', NOW())
 ON DUPLICATE KEY UPDATE version = version;

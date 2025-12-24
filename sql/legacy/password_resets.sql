@@ -1,8 +1,4 @@
--- ⚠️ NÃO IMPORTAR DIRETAMENTE - FICHEIRO LEGACY ⚠️
--- Este ficheiro é apenas para referência.
--- Use sql/schema.sql para instalação limpa.
-
--- Legacy: moved into consolidated schema.sql
+-- Tabela para gerir tokens de redefinição de senha
 USE cybercore;
 
 CREATE TABLE IF NOT EXISTS password_resets (

@@ -52,7 +52,7 @@ Os ficheiros em `sql/legacy/` são **apenas para referência**:
 
 Após importar o schema:
 ```bash
-php sample_users.php
+php scripts/sample_users.php
 ```
 
 Utilizadores criados:
