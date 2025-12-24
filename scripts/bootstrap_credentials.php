@@ -83,8 +83,8 @@ if ($result === false) {
     exit(1);
 }
 
-@chmod($target, 0600);
+@chmod($target, 0640);
 
 echo "\n✓ Criado: inc/db_credentials.php\n";
-echo "Permissões definidas para 600 (apenas proprietário).\n";
+echo "Permissões definidas para 640 (proprietário+grupo).\n";
 echo "Pronto.\n";

@@ -46,7 +46,7 @@ define('SITE_NAME', 'CyberCore - Área de Cliente');
 EOF
 
 # 2. Proteger o ficheiro
-chmod 600 inc/db_credentials.php
+chmod 640 inc/db_credentials.php
 
 # 3. Verificar
 cat inc/db_credentials.php
@@ -65,7 +65,7 @@ php scripts/bootstrap_credentials.php
 O script irá:
 - Ler `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `SITE_URL`, `SITE_NAME` do ambiente (se existirem)
 - Perguntar no terminal (modo interativo) caso faltem valores
-- Gerar `inc/db_credentials.php` e definir permissões `600`
+- Gerar `inc/db_credentials.php` e definir permissões `640`
 
 ### Opção 1.2: Via Composer (auto)
 
