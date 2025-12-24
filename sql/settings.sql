@@ -21,7 +21,7 @@ INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
 ('weekend_days', 'Sábado,Domingo'),
 ('currency', 'EUR'),
 ('currency_symbol', '€'),
-('currency_position', 'left'),
+('currency_position', 'right'),
 ('decimal_separator', ','),
 ('decimal_precision', '2'),
 ('cron_url', ''),

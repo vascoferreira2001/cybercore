@@ -35,7 +35,7 @@ function getGeneralSettingsDefaults() {
         'weekend_days' => 'Sábado,Domingo',
         'currency' => 'EUR',
         'currency_symbol' => '€',
-        'currency_position' => 'left',
+        'currency_position' => 'right',
         'decimal_separator' => ',',
         'decimal_precision' => '2',
         'cron_interval_minutes' => '10',

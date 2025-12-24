@@ -257,7 +257,7 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     </div>
     <div class="form-row">
       <label>Posição do símbolo</label>
-      <input type="text" name="currency_position" value="Esquerda (<?php echo htmlspecialchars($generalSettings['currency_symbol']); ?>10,00)" readonly>
+      <input type="text" name="currency_position" value="Direita (10,00<?php echo htmlspecialchars($generalSettings['currency_symbol']); ?>)" readonly>
     </div>
     <div class="form-row">
       <label>Separador decimal</label>
