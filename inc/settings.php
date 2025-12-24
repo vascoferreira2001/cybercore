@@ -24,6 +24,23 @@ function setSetting($pdo, $key, $value) {
     }
 }
 
+// Obter URL pública do ficheiro
+function getAssetUrl($relativePath) {
+    if (!$relativePath) return '';
+    // Garantir que o caminho começa com /
+    if (strpos($relativePath, '/') !== 0) {
+        $relativePath = '/' . $relativePath;
+    }
+    return $relativePath;
+}
+
+// Obter caminho absoluto do servidor para verificação de ficheiro
+function getAssetPath($relativePath) {
+    if (!$relativePath) return '';
+    $docRoot = $_SERVER['DOCUMENT_ROOT'];
+    return $docRoot . '/' . ltrim($relativePath, '/');
+}
+
 // Validação de upload de imagem
 function validateImageUpload($file, $maxSizeKB = 5000, $allowedFormats = ['jpg', 'jpeg', 'png']) {
     $errors = [];
@@ -58,16 +75,20 @@ function validateImageUpload($file, $maxSizeKB = 5000, $allowedFormats = ['jpg',
 
 // Guardar ficheiro de upload
 function saveUploadedFile($file, $uploadDir = 'uploads/') {
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+    $docRoot = $_SERVER['DOCUMENT_ROOT'];
+    $fullUploadDir = $docRoot . '/' . ltrim($uploadDir, '/');
+    
+    if (!is_dir($fullUploadDir)) {
+        mkdir($fullUploadDir, 0755, true);
     }
     
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $filename = uniqid('img_') . '.' . $ext;
-    $filepath = $uploadDir . $filename;
+    $filepath = $fullUploadDir . $filename;
+    $relativePath = '/' . ltrim($uploadDir, '/') . $filename;
     
     if (move_uploaded_file($file['tmp_name'], $filepath)) {
-        return $filepath;
+        return $relativePath;
     }
     
     return false;
@@ -75,7 +96,12 @@ function saveUploadedFile($file, $uploadDir = 'uploads/') {
 
 // Eliminar ficheiro antigo
 function deleteOldFile($filepath) {
-    if ($filepath && file_exists($filepath)) {
-        unlink($filepath);
+    if (!$filepath) return;
+    $docRoot = $_SERVER['DOCUMENT_ROOT'];
+    $fullPath = $docRoot . $filepath;
+    if (file_exists($fullPath)) {
+        unlink($fullPath);
     }
 }
+
+?>

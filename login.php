@@ -40,9 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Carregar background
 $pdo = getDB();
 $loginBackground = getSetting($pdo, 'login_background');
+$backgroundUrl = getAssetUrl($loginBackground);
+$backgroundPath = getAssetPath($loginBackground);
 $backgroundStyle = '';
-if ($loginBackground && file_exists($loginBackground)) {
-  $backgroundStyle = 'background-image:url(' . htmlspecialchars($loginBackground) . ');background-size:cover;background-position:center;background-attachment:fixed';
+if ($loginBackground && file_exists($backgroundPath)) {
+  $backgroundStyle = 'background-image:url(' . htmlspecialchars($backgroundUrl) . '?v=' . time() . ');background-size:cover;background-position:center;background-attachment:fixed';
 }
 ?>
 <!doctype html>

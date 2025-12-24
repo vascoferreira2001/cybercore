@@ -82,6 +82,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $siteLogo = getSetting($pdo, 'site_logo');
 $favicon = getSetting($pdo, 'favicon');
 $loginBackground = getSetting($pdo, 'login_background');
+
+// URLs públicas e caminhos para verificação
+$siteLogoUrl = getAssetUrl($siteLogo);
+$faviconUrl = getAssetUrl($favicon);
+$loginBackgroundUrl = getAssetUrl($loginBackground);
+$siteLogoPath = getAssetPath($siteLogo);
+$faviconPath = getAssetPath($favicon);
+$loginBackgroundPath = getAssetPath($loginBackground);
 ?>
 <?php include __DIR__ . '/../inc/header.php'; ?>
 
@@ -113,9 +121,9 @@ $loginBackground = getSetting($pdo, 'login_background');
     <h3>Logo do Website</h3>
     <p class="small">Dimensões recomendadas: 150x60px. Formatos: JPG, JPEG, PNG. Máximo: 2MB.</p>
     
-    <?php if ($siteLogo && file_exists($siteLogo)): ?>
+    <?php if ($siteLogo && file_exists($siteLogoPath)): ?>
       <div style="margin-bottom:12px">
-        <img src="<?php echo htmlspecialchars($siteLogo); ?>" alt="Logo" style="max-width:150px;max-height:60px;border:1px solid #ddd;padding:4px;border-radius:4px">
+        <img src="<?php echo htmlspecialchars($siteLogoUrl); ?>?v=<?php echo time(); ?>" alt="Logo" style="max-width:150px;max-height:60px;border:1px solid #ddd;padding:4px;border-radius:4px">
         <p class="small" style="margin:8px 0 0 0">Ficheiro atual: <?php echo htmlspecialchars(basename($siteLogo)); ?></p>
       </div>
     <?php endif; ?>
@@ -130,9 +138,9 @@ $loginBackground = getSetting($pdo, 'login_background');
     <h3>Favicon (32x32)</h3>
     <p class="small">Dimensões: 32x32px. Formatos: JPG, JPEG, PNG. Máximo: 500KB.</p>
     
-    <?php if ($favicon && file_exists($favicon)): ?>
+    <?php if ($favicon && file_exists($faviconPath)): ?>
       <div style="margin-bottom:12px">
-        <img src="<?php echo htmlspecialchars($favicon); ?>" alt="Favicon" style="width:32px;height:32px;border:1px solid #ddd;padding:2px;border-radius:4px">
+        <img src="<?php echo htmlspecialchars($faviconUrl); ?>?v=<?php echo time(); ?>" alt="Favicon" style="width:32px;height:32px;border:1px solid #ddd;padding:2px;border-radius:4px">
         <p class="small" style="margin:8px 0 0 0">Ficheiro atual: <?php echo htmlspecialchars(basename($favicon)); ?></p>
       </div>
     <?php endif; ?>
@@ -147,9 +155,9 @@ $loginBackground = getSetting($pdo, 'login_background');
     <h3>Imagem de Fundo da Página de Login</h3>
     <p class="small">Dimensões recomendadas: 1920x1080px. Formatos: JPG, JPEG, PNG. Máximo: 5MB.</p>
     
-    <?php if ($loginBackground && file_exists($loginBackground)): ?>
+    <?php if ($loginBackground && file_exists($loginBackgroundPath)): ?>
       <div style="margin-bottom:12px">
-        <img src="<?php echo htmlspecialchars($loginBackground); ?>" alt="Background" style="max-width:200px;max-height:150px;border:1px solid #ddd;padding:4px;border-radius:4px;object-fit:cover">
+        <img src="<?php echo htmlspecialchars($loginBackgroundUrl); ?>?v=<?php echo time(); ?>" alt="Background" style="max-width:200px;max-height:150px;border:1px solid #ddd;padding:4px;border-radius:4px;object-fit:cover">
         <p class="small" style="margin:8px 0 0 0">Ficheiro atual: <?php echo htmlspecialchars(basename($loginBackground)); ?></p>
       </div>
     <?php endif; ?>

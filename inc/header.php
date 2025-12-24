@@ -14,6 +14,12 @@ header("Expires: 0");
 $pdo = getDB();
 $siteLogo = getSetting($pdo, 'site_logo');
 $favicon = getSetting($pdo, 'favicon');
+
+// Construir URLs públicas baseadas no servidor
+$siteLogoUrl = getAssetUrl($siteLogo);
+$faviconUrl = getAssetUrl($favicon);
+$siteLogoPath = getAssetPath($siteLogo);
+$faviconPath = getAssetPath($favicon);
 ?>
 <!doctype html>
 <html lang="pt">
@@ -22,16 +28,16 @@ $favicon = getSetting($pdo, 'favicon');
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?php echo SITE_NAME; ?></title>
   <link rel="stylesheet" href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../css/style.css' : 'css/style.css'; ?>">
-  <?php if ($favicon && file_exists(__DIR__ . '/' . $favicon)): ?>
-    <link rel="icon" type="image/png" href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '..' : ''; ?><?php echo htmlspecialchars($favicon); ?>">
+  <?php if ($faviconPath && file_exists($faviconPath)): ?>
+    <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($faviconUrl); ?>?v=<?php echo time(); ?>">
   <?php endif; ?>
 </head>
 <body>
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <?php if ($siteLogo && file_exists(__DIR__ . '/' . $siteLogo)): ?>
-        <img src="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '..' : ''; ?><?php echo htmlspecialchars($siteLogo); ?>" alt="Logo" style="max-width:150px;height:auto">
+      <?php if ($siteLogoPath && file_exists($siteLogoPath)): ?>
+        <img src="<?php echo htmlspecialchars($siteLogoUrl); ?>?v=<?php echo time(); ?>" alt="Logo" style="max-width:150px;height:auto">
       <?php else: ?>
         CyberCore
       <?php endif; ?>
