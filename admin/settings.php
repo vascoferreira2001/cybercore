@@ -70,8 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    if ($message) {
+    if ($message && empty($errors)) {
         $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$user['id'],'settings_update','Settings updated']);
+        // Recarregar página para aplicar novas configurações
+        header('Location: settings.php?success=1');
+        exit;
     }
 }
 
@@ -87,7 +90,12 @@ $loginBackground = getSetting($pdo, 'login_background');
   
   <?php if (!empty($message)): ?>
     <div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">
-      ✓ <?php echo htmlspecialchars($message); ?>
+      ✓ <?php echo htmlspecialchars($message); ?>Recarregando...
+    </div>
+    <script>setTimeout(() => location.reload(), 1500);</script>
+  <?php elseif (isset($_GET['success'])): ?>
+    <div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">
+      ✓ Configurações aplicadas com sucesso!
     </div>
   <?php endif; ?>
   
