@@ -76,7 +76,7 @@ $adminUrl = $inAdmin ? '' : '/admin';
 
         <!-- Serviços (submenu) -->
         <div class="nav-group">
-          <a href="#" class="nav-item submenu-toggle" onclick="toggleSubmenu(event, 'services')">
+          <a href="#" class="nav-item submenu-toggle" data-submenu="services" onclick="toggleSubmenu(event, 'services')">
             <span class="icon">🛠️</span> Serviços <span class="arrow">▼</span>
           </a>
           <div id="services-submenu" class="submenu">
@@ -104,7 +104,7 @@ $adminUrl = $inAdmin ? '' : '/admin';
 
         <!-- Equipa (submenu) -->
         <div class="nav-group">
-          <a href="#" class="nav-item submenu-toggle" onclick="toggleSubmenu(event, 'team')">
+          <a href="#" class="nav-item submenu-toggle" data-submenu="team" onclick="toggleSubmenu(event, 'team')">
             <span class="icon">👔</span> Equipa <span class="arrow">▼</span>
           </a>
           <div id="team-submenu" class="submenu">
@@ -116,7 +116,7 @@ $adminUrl = $inAdmin ? '' : '/admin';
 
         <!-- Suporte ao Cliente (submenu) -->
         <div class="nav-group">
-          <a href="#" class="nav-item submenu-toggle" onclick="toggleSubmenu(event, 'customer-support')">
+          <a href="#" class="nav-item submenu-toggle" data-submenu="customer-support" onclick="toggleSubmenu(event, 'customer-support')">
             <span class="icon">🎧</span> Suporte ao Cliente <span class="arrow">▼</span>
           </a>
           <div id="customer-support-submenu" class="submenu">
@@ -130,7 +130,7 @@ $adminUrl = $inAdmin ? '' : '/admin';
         <!-- Suporte Financeiro (submenu) - Apenas Gestor e Suporte Financeira -->
         <?php if(in_array($cu['role'], ['Gestor','Suporte Financeira'])): ?>
         <div class="nav-group">
-          <a href="#" class="nav-item submenu-toggle" onclick="toggleSubmenu(event, 'finance')">
+          <a href="#" class="nav-item submenu-toggle" data-submenu="finance" onclick="toggleSubmenu(event, 'finance')">
             <span class="icon">💰</span> Suporte Financeiro <span class="arrow">▼</span>
           </a>
           <div id="finance-submenu" class="submenu">
@@ -139,11 +139,12 @@ $adminUrl = $inAdmin ? '' : '/admin';
           </div>
         </div>
         <?php endif; ?>
+        <?php endif; ?>
 
         <!-- Configuração (submenu) - Apenas Gestor -->
         <?php if($cu['role'] === 'Gestor'): ?>
         <div class="nav-group">
-          <a href="#" class="nav-item submenu-toggle" onclick="toggleSubmenu(event, 'settings')">
+          <a href="#" class="nav-item submenu-toggle" data-submenu="settings" onclick="toggleSubmenu(event, 'settings')">
             <span class="icon">⚙️</span> Configuração <span class="arrow">▼</span>
           </a>
           <div id="settings-submenu" class="submenu">
