@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../inc/auth.php';
 require_once __DIR__ . '/../inc/db.php';
+require_once __DIR__ . '/../inc/permissions.php';
 
 requireLogin();
 $user = currentUser();
@@ -26,23 +27,41 @@ function safeCount($pdo, $sql, $params = []) {
 
 $pdo = getDB();
 
-// Métricas conforme role
+// Obtém as permissões do utilizador
+$permissions = getUserPermissions($pdo, $user);
+
+// Métricas conforme permissões
 $metrics = [];
-if ($user['role'] === 'Gestor') {
+
+// Clientes - mostrar se tem acesso
+if (canAccessResource($pdo, $user, 'customers', 'view')) {
     $metrics['total_clients'] = safeCount($pdo, 'SELECT COUNT(*) FROM users WHERE role = "Cliente"');
+}
+
+// Tickets - mostrar se tem acesso
+if (canAccessResource($pdo, $user, 'tickets', 'view')) {
     $metrics['total_tickets'] = safeCount($pdo, 'SELECT COUNT(*) FROM tickets');
     $metrics['open_tickets'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'open'");
+    $metrics['pending_tickets'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'pending'");
+}
+
+// Domínios - mostrar se tem acesso
+if (canAccessResource($pdo, $user, 'services', 'view')) {
     $metrics['total_domains'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains');
-    $metrics['unpaid_invoices'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE status = 'unpaid'");
-} elseif ($user['role'] === 'Suporte Financeira') {
+}
+
+// Faturas/Avisos de Pagamento - mostrar se tem acesso
+if (canAccessResource($pdo, $user, 'payment_warnings', 'view')) {
     $metrics['total_invoices'] = safeCount($pdo, 'SELECT COUNT(*) FROM invoices');
     $metrics['unpaid_invoices'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE status = 'unpaid'");
     $metrics['paid_invoices'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE status = 'paid'");
-} elseif (in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])) {
-    $metrics['open_tickets'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'open'");
-    $metrics['pending_tickets'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'pending'");
-    $metrics['total_clients'] = safeCount($pdo, 'SELECT COUNT(*) FROM users WHERE role = "Cliente"');
 }
+
+// Despesas - mostrar se tem acesso
+if (canAccessResource($pdo, $user, 'expenses', 'view')) {
+    $metrics['total_expenses'] = safeCount($pdo, 'SELECT COUNT(*) FROM expenses');
+}
+
 ?>
 <?php include __DIR__ . '/../inc/header.php'; ?>
 

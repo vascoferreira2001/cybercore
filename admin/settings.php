@@ -40,6 +40,13 @@ $smtp = [
   'smtp_from_name' => getSetting($pdo, 'smtp_from_name', defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'CyberCore'),
 ];
 
+$maintenance = [
+  'disable_login' => getSetting($pdo, 'maintenance_disable_login', '0'),
+  'message' => getSetting($pdo, 'maintenance_message', ''),
+  'exception_roles' => getSetting($pdo, 'maintenance_exception_roles', 'Gestor'),
+  'hide_menus' => json_decode(getSetting($pdo, 'maintenance_hide_menus', '[]'), true) ?: []
+];
+
 // Função auxiliar para carregar permissão (definida no início para uso global)
 function getDeptPermission($pdo, $deptId, $key) {
   try {
@@ -147,7 +154,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // === CLIENTE: Permissões ===
   if (isset($_POST['save_client_permissions'])) {
-    $clientPermsKeys = ['view_invoices','pay_invoices','open_tickets','manage_domains','view_services','edit_profile'];
+    $clientPermsKeys = [
+      'view_invoices',
+      'pay_invoices',
+      'open_tickets',
+      'manage_domains',
+      'view_services',
+      'edit_profile',
+      'disable_account_creation',
+      'verify_email_before_login',
+      'client_view_documents',
+      'client_add_documents'
+    ];
     foreach ($clientPermsKeys as $k) {
       $allowed = isset($_POST['client_perm'][$k]) ? 1 : 0;
       $stmt = $pdo->prepare('INSERT INTO client_permissions (permission_key, allowed) VALUES (?, ?) ON DUPLICATE KEY UPDATE allowed = VALUES(allowed)');
@@ -273,6 +291,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 
+  // === MANUTENÇÃO ===
+  if (isset($_POST['save_maintenance'])) {
+    $disableLogin = isset($_POST['maintenance_disable_login']) ? '1' : '0';
+    $messageText = trim($_POST['maintenance_message'] ?? '');
+    $exceptionRoles = trim($_POST['maintenance_exception_roles'] ?? 'Gestor');
+    $hideMenus = $_POST['maintenance_hide_menus'] ?? [];
+    if (!is_array($hideMenus)) {
+      $hideMenus = [];
+    }
+    $hideMenus = array_values(array_filter(array_map('trim', $hideMenus), function($v){ return $v !== ''; }));
+
+    setSetting($pdo, 'maintenance_disable_login', $disableLogin);
+    setSetting($pdo, 'maintenance_message', $messageText);
+    setSetting($pdo, 'maintenance_exception_roles', $exceptionRoles ?: 'Gestor');
+    setSetting($pdo, 'maintenance_hide_menus', json_encode($hideMenus));
+
+    header('Location: settings.php?tab=manutencao&success=1');
+    exit;
+  }
+
   // === ABAS GERAL/LOCALIZAÇÃO/EMAIL/CRON: só processar se não for ação específica das novas abas ===
   
   // Eliminar imagens existentes (logo, favicon, fundo)
@@ -312,7 +350,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                       isset($_POST['save_dept_permissions']) || isset($_POST['save_client_permissions']) || isset($_POST['save_company']) ||
                       isset($_POST['add_category']) || isset($_POST['toggle_category']) || isset($_POST['delete_category']) ||
                       isset($_POST['add_tax']) || isset($_POST['toggle_tax']) || isset($_POST['delete_tax']) ||
-                      isset($_POST['add_method']) || isset($_POST['toggle_method']) || isset($_POST['delete_method']);
+                      isset($_POST['add_method']) || isset($_POST['toggle_method']) || isset($_POST['delete_method']) ||
+                      isset($_POST['save_maintenance']);
 
   if (!$isSpecificAction) {
     // Garantir que os valores obrigatórios permanecem consistentes
@@ -476,6 +515,7 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     <a href="settings.php?tab=modelos" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='modelos'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='modelos'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='modelos'?'bold':'normal'; ?>;text-decoration:none">Modelos de Email</a>
     <a href="settings.php?tab=notificacoes" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='notificacoes'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='notificacoes'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='notificacoes'?'bold':'normal'; ?>;text-decoration:none">Notificações</a>
     <a href="settings.php?tab=integracao" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='integracao'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='integracao'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='integracao'?'bold':'normal'; ?>;text-decoration:none">Integração</a>
+    <a href="settings.php?tab=manutencao" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='manutencao'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='manutencao'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='manutencao'?'bold':'normal'; ?>;text-decoration:none">Manutenção</a>
   </div>
   
   <!-- Mensagens -->
@@ -491,6 +531,62 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     <div style="background:<?php echo (isset($_GET['ok']) && $_GET['ok']==='1') ? '#e8f5e9' : '#ffebee'; ?>;color:<?php echo (isset($_GET['ok']) && $_GET['ok']==='1') ? '#2e7d32' : '#c62828'; ?>;padding:12px;border-radius:4px;margin-bottom:16px">
       <?php echo (isset($_GET['ok']) && $_GET['ok']==='1') ? '✓ Email de teste enviado com sucesso.' : '✗ Falha ao enviar email de teste.'; ?>
     </div>
+  <?php endif; ?>
+
+  <!-- TAB: MANUTENÇÃO -->
+  <?php if ($activeTab === 'manutencao'): ?>
+    <form method="post">
+      <?php echo csrf_input(); ?>
+      <h3>Modo de Manutenção</h3>
+      <p class="small" style="margin-bottom:12px">Controla a visibilidade de menus na área de cliente e o acesso ao login durante manutenção.</p>
+
+      <div style="margin-bottom:16px;padding:12px;border:1px solid #ddd;border-radius:4px">
+        <h4 style="margin-top:0">Login</h4>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="maintenance_disable_login" <?php echo $maintenance['disable_login']==='1'?'checked':''; ?>> Desativar o Login (mostra aviso de manutenção; só exceções podem entrar)</label>
+        <label style="display:block;margin-bottom:8px">Mensagem de manutenção</label>
+        <textarea name="maintenance_message" rows="3" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px"><?php echo htmlspecialchars($maintenance['message']); ?></textarea>
+        <p class="small" style="margin-top:6px">Texto exibido no aviso. Sugestão: informe janelas de manutenção e contactos.</p>
+        <label style="display:block;margin-top:8px">Cargos/roles que podem entrar (separados por vírgula)</label>
+        <input type="text" name="maintenance_exception_roles" value="<?php echo htmlspecialchars($maintenance['exception_roles']); ?>" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px">
+        <p class="small" style="margin-top:6px">Ex.: Gestor, Suporte ao Cliente</p>
+      </div>
+
+      <div style="margin-bottom:16px;padding:12px;border:1px solid #ddd;border-radius:4px">
+        <h4 style="margin-top:0">Ocultar menus na Área de Cliente</h4>
+        <p class="small" style="margin-bottom:8px">Selecione os menus a ocultar para clientes durante a manutenção.</p>
+        <?php 
+          $menuOptions = [
+            'painel' => 'Painel',
+            'clientes' => 'Clientes',
+            'tarefas' => 'Tarefas',
+            'servicos' => 'Serviços',
+            'avisos_pagamento' => 'Avisos de Pagamento',
+            'pagamentos' => 'Pagamentos',
+            'contratos' => 'Contratos',
+            'orcamentos' => 'Orçamentos',
+            'notas' => 'Notas',
+            'live_chat' => 'Live Chat',
+            'equipa' => 'Equipa',
+            'tickets' => 'Tickets',
+            'avisos' => 'Avisos',
+            'knowledge_base' => 'Banco de Conhecimentos',
+            'documentos' => 'Documentos',
+            'despesas' => 'Despesas',
+            'relatorios' => 'Relatórios'
+          ];
+        ?>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 12px">
+          <?php foreach ($menuOptions as $key => $label): ?>
+            <label><input type="checkbox" name="maintenance_hide_menus[]" value="<?php echo htmlspecialchars($key); ?>" <?php echo in_array($key, $maintenance['hide_menus'], true)?'checked':''; ?>> <?php echo htmlspecialchars($label); ?></label>
+          <?php endforeach; ?>
+        </div>
+        <p class="small" style="margin-top:6px">As opções selecionadas ficam ocultas para clientes enquanto este modo estiver ativo.</p>
+      </div>
+
+      <div class="form-row" style="margin-top:12px">
+        <button type="submit" name="save_maintenance" value="1" class="btn">Guardar Configurações de Manutenção</button>
+      </div>
+    </form>
   <?php endif; ?>
   
   <?php if (!empty($errors)): ?>
@@ -1009,7 +1105,10 @@ $loginBackgroundPath = getAssetPath($loginBackground);
   <!-- TAB: PERMISSÕES DO CLIENTE -->
   <?php if ($activeTab === 'cliente'): ?>
     <?php 
-      $clientPermsKeys = ['view_invoices','pay_invoices','open_tickets','manage_domains','view_services','edit_profile'];
+      $clientPermsKeys = [
+        'view_invoices','pay_invoices','open_tickets','manage_domains','view_services','edit_profile',
+        'disable_account_creation','verify_email_before_login','client_view_documents','client_add_documents'
+      ];
       $rows = $pdo->query('SELECT * FROM client_permissions')->fetchAll();
       $permMap = [];
       foreach ($rows as $r) $permMap[$r['permission_key']] = (int)$r['allowed'];
@@ -1017,11 +1116,30 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     <form method="post">
       <?php echo csrf_input(); ?>
       <h3>Permissões dos Clientes</h3>
-      <div class="form-row">
-        <?php foreach ($clientPermsKeys as $k): ?>
-          <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[<?php echo $k; ?>]" <?php echo !empty($permMap[$k])?'checked':''; ?>> <?php echo htmlspecialchars(str_replace('_',' ', ucfirst($k))); ?></label>
-        <?php endforeach; ?>
+      <p class="small" style="margin-bottom:12px">Defina o que os clientes podem fazer na área de cliente.</p>
+
+      <div style="margin-bottom:16px;padding:12px;border:1px solid #ddd;border-radius:4px">
+        <h4 style="margin-top:0">Criação de Conta e Login</h4>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[disable_account_creation]" <?php echo !empty($permMap['disable_account_creation'])?'checked':''; ?>> Desativar criação de conta (desativa o registo no login)</label>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[verify_email_before_login]" <?php echo !empty($permMap['verify_email_before_login'])?'checked':''; ?>> Verificar e-mail antes de efetuar o login</label>
       </div>
+
+      <div style="margin-bottom:16px;padding:12px;border:1px solid #ddd;border-radius:4px">
+        <h4 style="margin-top:0">Documentos</h4>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[client_view_documents]" <?php echo !empty($permMap['client_view_documents'])?'checked':''; ?>> O cliente pode ver documentos</label>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[client_add_documents]" <?php echo !empty($permMap['client_add_documents'])?'checked':''; ?>> O cliente pode adicionar documentos</label>
+      </div>
+
+      <div style="margin-bottom:16px;padding:12px;border:1px solid #ddd;border-radius:4px">
+        <h4 style="margin-top:0">Acessos Gerais</h4>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[view_invoices]" <?php echo !empty($permMap['view_invoices'])?'checked':''; ?>> Ver faturas</label>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[pay_invoices]" <?php echo !empty($permMap['pay_invoices'])?'checked':''; ?>> Pagar faturas</label>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[open_tickets]" <?php echo !empty($permMap['open_tickets'])?'checked':''; ?>> Abrir tickets</label>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[manage_domains]" <?php echo !empty($permMap['manage_domains'])?'checked':''; ?>> Gerir domínios</label>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[view_services]" <?php echo !empty($permMap['view_services'])?'checked':''; ?>> Ver serviços</label>
+        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[edit_profile]" <?php echo !empty($permMap['edit_profile'])?'checked':''; ?>> Editar perfil</label>
+      </div>
+
       <div class="form-row" style="margin-top:12px">
         <button type="submit" name="save_client_permissions" value="1" class="btn">Guardar Permissões</button>
       </div>

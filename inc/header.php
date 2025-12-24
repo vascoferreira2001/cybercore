@@ -4,6 +4,7 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/settings.php';
+require_once __DIR__ . '/permissions.php';
 
 // Prevenir cache para garantir que os dados sejam sempre atualizados
 header("Cache-Control: no-cache, no-store, must-revalidate");
