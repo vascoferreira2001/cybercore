@@ -1,7 +1,8 @@
 /* Estilos básicos para o scaffold da Área de Cliente */
 *{box-sizing:border-box}
-body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f5f7fa}
-.app{display:flex;min-height:100vh}
+html{height:100%}
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f5f7fa;display:flex;flex-direction:column;min-height:100vh}
+.app{display:flex;flex:1}
 .sidebar{width:280px;background:#0b3b5a;color:#fff;padding:20px;display:flex;flex-direction:column;overflow-y:auto}
 .sidebar .brand{font-weight:700;font-size:20px;margin-bottom:20px;text-align:center}
 .user-info{background:rgba(255,255,255,0.1);padding:12px;border-radius:6px;margin-bottom:20px;font-size:13px;text-align:center}
@@ -34,4 +35,7 @@ input[type=text],input[type=email],input[type=password],select,textarea{width:10
 .sidebar .logout{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,0.2)}
 .logout a{display:block;padding:10px 12px;color:#fff;text-decoration:none;border-radius:4px;text-align:center;background:rgba(255,0,0,0.2);transition:all 0.2s}
 .logout a:hover{background:rgba(255,0,0,0.4)}
+footer{background:#1a1a1a;color:#ccc;padding:20px;text-align:center;font-size:12px;width:100%;margin-top:auto}
+footer a{color:#4CAF50;text-decoration:none}
+footer a:hover{text-decoration:underline}
 

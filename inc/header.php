@@ -20,6 +20,11 @@ $siteLogoUrl = getAssetUrl($siteLogo);
 $faviconUrl = getAssetUrl($favicon);
 $siteLogoPath = getAssetPath($siteLogo);
 $faviconPath = getAssetPath($favicon);
+
+// Determinar se está em admin para ajustar URLs
+$inAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
+$baseUrl = $inAdmin ? '/admin' : '';
+$adminUrl = $inAdmin ? '' : '/admin';
 ?>
 <!doctype html>
 <html lang="pt">
@@ -55,17 +60,17 @@ $faviconPath = getAssetPath($favicon);
       <?php if(in_array($cu['role'], ['Gestor','Suporte ao Cliente','Suporte Técnica','Suporte Financeira'])): ?>
 
         <!-- Painel -->
-        <a href="admin/dashboard.php" class="nav-item">
+        <a href="/admin/dashboard.php" class="nav-item">
           <span class="icon">📊</span> Painel
         </a>
 
         <!-- Clientes -->
-        <a href="admin/customers.php" class="nav-item">
+        <a href="/admin/customers.php" class="nav-item">
           <span class="icon">👥</span> Clientes
         </a>
 
         <!-- Tarefas -->
-        <a href="admin/tasks.php" class="nav-item">
+        <a href="/admin/tasks.php" class="nav-item">
           <span class="icon">✓</span> Tarefas
         </a>
 
@@ -75,25 +80,25 @@ $faviconPath = getAssetPath($favicon);
             <span class="icon">🛠️</span> Serviços <span class="arrow">▼</span>
           </a>
           <div id="services-submenu" class="submenu">
-            <a href="admin/services.php" class="nav-item-sub">Serviços</a>
-            <a href="admin/payment-warnings.php" class="nav-item-sub">Avisos de Pagamento</a>
-            <a href="admin/payments.php" class="nav-item-sub">Pagamentos</a>
-            <a href="admin/contracts.php" class="nav-item-sub">Contratos</a>
+            <a href="/admin/services.php" class="nav-item-sub">Serviços</a>
+            <a href="/admin/payment-warnings.php" class="nav-item-sub">Avisos de Pagamento</a>
+            <a href="/admin/payments.php" class="nav-item-sub">Pagamentos</a>
+            <a href="/admin/contracts.php" class="nav-item-sub">Contratos</a>
           </div>
         </div>
 
         <!-- Orçamentos -->
-        <a href="admin/quotes.php" class="nav-item">
+        <a href="/admin/quotes.php" class="nav-item">
           <span class="icon">📋</span> Orçamentos
         </a>
 
         <!-- Notas (Notas Privadas) -->
-        <a href="admin/notes.php" class="nav-item">
+        <a href="/admin/notes.php" class="nav-item">
           <span class="icon">📝</span> Notas
         </a>
 
         <!-- Live Chat - Equipa -->
-        <a href="admin/live-chat.php" class="nav-item">
+        <a href="/admin/live-chat.php" class="nav-item">
           <span class="icon">💬</span> Live Chat
         </a>
 
@@ -103,9 +108,9 @@ $faviconPath = getAssetPath($favicon);
             <span class="icon">👔</span> Equipa <span class="arrow">▼</span>
           </a>
           <div id="team-submenu" class="submenu">
-            <a href="admin/team.php" class="nav-item-sub">Equipa</a>
-            <a href="admin/schedule.php" class="nav-item-sub">Horário de Trabalho</a>
-            <a href="admin/licenses.php" class="nav-item-sub">Licenças</a>
+            <a href="/admin/team.php" class="nav-item-sub">Equipa</a>
+            <a href="/admin/schedule.php" class="nav-item-sub">Horário de Trabalho</a>
+            <a href="/admin/licenses.php" class="nav-item-sub">Licenças</a>
           </div>
         </div>
 
@@ -115,10 +120,10 @@ $faviconPath = getAssetPath($favicon);
             <span class="icon">🎧</span> Suporte ao Cliente <span class="arrow">▼</span>
           </a>
           <div id="customer-support-submenu" class="submenu">
-            <a href="admin/tickets.php" class="nav-item-sub">Tickets</a>
-            <a href="admin/alerts.php" class="nav-item-sub">Avisos</a>
-            <a href="admin/knowledge-base.php" class="nav-item-sub">Bancos de Conhecimento</a>
-            <a href="admin/documents.php" class="nav-item-sub">Documentos</a>
+            <a href="/admin/tickets.php" class="nav-item-sub">Tickets</a>
+            <a href="/admin/alerts.php" class="nav-item-sub">Avisos</a>
+            <a href="/admin/knowledge-base.php" class="nav-item-sub">Bancos de Conhecimento</a>
+            <a href="/admin/documents.php" class="nav-item-sub">Documentos</a>
           </div>
         </div>
 
@@ -129,8 +134,8 @@ $faviconPath = getAssetPath($favicon);
             <span class="icon">💰</span> Suporte Financeiro <span class="arrow">▼</span>
           </a>
           <div id="finance-submenu" class="submenu">
-            <a href="admin/expenses.php" class="nav-item-sub">Despesas</a>
-            <a href="admin/reports.php" class="nav-item-sub">Relatórios</a>
+            <a href="/admin/expenses.php" class="nav-item-sub">Despesas</a>
+            <a href="/admin/reports.php" class="nav-item-sub">Relatórios</a>
           </div>
         </div>
         <?php endif; ?>
@@ -142,32 +147,32 @@ $faviconPath = getAssetPath($favicon);
             <span class="icon">⚙️</span> Configuração <span class="arrow">▼</span>
           </a>
           <div id="settings-submenu" class="submenu">
-            <a href="admin/settings.php" class="nav-item-sub">Definições Gerais</a>
-            <a href="admin/manage_users.php" class="nav-item-sub">Gestão de Utilizadores</a>
-            <a href="admin/system-logs.php" class="nav-item-sub">Logs do Sistema</a>
+            <a href="/admin/settings.php" class="nav-item-sub">Definições Gerais</a>
+            <a href="/admin/manage_users.php" class="nav-item-sub">Gestão de Utilizadores</a>
+            <a href="/admin/system-logs.php" class="nav-item-sub">Logs do Sistema</a>
           </div>
         </div>
         <?php endif; ?>
 
       <!-- Menu para Cliente (visão simples) -->
       <?php else: ?>
-        <a href="dashboard.php" class="nav-item">
+        <a href="/dashboard.php" class="nav-item">
           <span class="icon">📊</span> Painel
         </a>
-        <a href="support.php" class="nav-item">
+        <a href="/support.php" class="nav-item">
           <span class="icon">🎧</span> Suporte
         </a>
-        <a href="domains.php" class="nav-item">
+        <a href="/domains.php" class="nav-item">
           <span class="icon">🌐</span> Domínios
         </a>
-        <a href="finance.php" class="nav-item">
+        <a href="/finance.php" class="nav-item">
           <span class="icon">💰</span> Financeiro
         </a>
-        <a href="logs.php" class="nav-item">
+        <a href="/logs.php" class="nav-item">
           <span class="icon">📋</span> Logs
         </a>
       <?php endif; ?>
     </nav>
-    <div class="logout"><a href="logout.php">Logout</a></div>
+    <div class="logout"><a href="/logout.php">Logout</a></div>
   </aside>
   <main class="content">
