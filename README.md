@@ -1,215 +1,140 @@
 # CyberCore - Área de Cliente
 
-## Visão Geral
+**Plataforma de gestão de domínios, alojamento e suporte.**
 
-CyberCore é uma plataforma de área de cliente para gestão de domínios, alojamento e suporte. Destina-se a correr **apenas em produção**, ligada a uma base de dados já existente no servidor.
+---
 
-## Configuração (Produção)
+## 🚀 Início Rápido
 
-### Variáveis de Ambiente
+### Para Desenvolvedores
 
-Configure as seguintes variáveis de ambiente no servidor:
+1. **Clonar e instalar:**
+   ```bash
+   git clone <repo>
+   cd cybercore
+   ```
 
-```bash
-# Base de Dados
-export DB_HOST=127.0.0.1
-export DB_NAME=cybercore
-export DB_USER=cybercore
-export DB_PASS='sua_password'
+2. **Criar ficheiro de credenciais:**
+   ```bash
+   cp inc/db_credentials.example.php inc/db_credentials.php
+   # Editar com suas credenciais
+   ```
 
-# Site
-export SITE_URL='https://seu-dominio'
-export SITE_NAME='CyberCore - Área de Cliente'
+3. **Importar base de dados:**
+   ```bash
+   mysql -u seu_user -p seu_db < sql/schema.sql
+   ```
 
-# Email (opcional)
-export SMTP_HOST='smtp.seu-dominio.com'
-export SMTP_PORT=587
-export SMTP_USER='seu-email@seu-dominio.com'
-export SMTP_PASS='password'
-export SMTP_SECURE='tls'
-export MAIL_FROM='noreply@seu-dominio.com'
-export MAIL_FROM_NAME='CyberCore'
+4. **Criar utilizadores de teste:**
+   ```bash
+   php scripts/sample_users.php
+   ```
+
+### Para Administradores / Deploy em Produção
+
+**→ Leia [SETUP.md](SETUP.md) para instruções completas**
+
+Contém:
+- ✅ Setup do servidor
+- ✅ Configuração de credenciais
+- ✅ Troubleshooting
+- ✅ Segurança
+- ✅ Referência de rotas
+- ✅ Permissões por role
+
+---
+
+## 📋 Estrutura
+
+```
+├── admin/           # Painel de administração
+├── assets/          # CSS, JS, uploads
+├── inc/             # Lógica reutilizável (auth, db, etc.)
+├── scripts/         # Utilitários (migrate, sample_users)
+├── sql/             # Schema (usar APENAS schema.sql)
+├── docs/            # Documentação adicional
+└── [*.php]          # Rotas públicas (login, register, dashboard, etc.)
 ```
 
-### Alternativa: Ficheiro Local (não versionado)
+---
 
-Se preferir usar um ficheiro em vez de variáveis de ambiente:
+## 🔑 Credenciais
 
-1. **Copiar o template**:
+**Método 1: Ficheiro local (recomendado)**
 ```bash
 cp inc/db_credentials.example.php inc/db_credentials.php
 ```
 
-2. **Editar com as suas credenciais**:
-```php
-<?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'cybercore');
-define('DB_USER', 'cybercore');
-define('DB_PASS', 'sua_password_real');
-?>
-```
-
-**Nota**: `inc/db_credentials.php` está no `.gitignore` e **nunca** será commitado ao Git.
-
-
-## Rotas Principais
-
-| Rota | Descrição |
-|------|-----------|
-| `login.php` | Autenticação |
-| `register.php` | Registo de novos utilizadores |
-| `dashboard.php` | Painel inicial (após autenticação) |
-| `support.php` | Gestão de tickets de suporte |
-| `domains.php` | Gestão de domínios |
-| `finance.php` | Aviso de pagamentos / Financeiro |
-| `logs.php` | Histórico de atividades |
-| `manage_users.php` | Descontinuado (redirige para Configurações > Equipa) |
-
-## Permissões por Role
-
-### Cliente
-- Acesso à sua própria área
-- Domínios próprios (criar, editar, eliminar)
-- Suporte (criar tickets, ver seus tickets)
-- Financeiro (ver faturas próprias)
-- Logs (ver seus logs)
-
-### Suporte ao Cliente
-- Ver/editar todos os domínios (sem eliminar)
-- Ver tickets de suporte
-- Ver logs
-
-### Suporte Técnica
-- Ver/editar todos os domínios (sem eliminar)
-- Ver tickets de suporte
-- Ver logs
-
-### Suporte Financeira
-- Ver/editar todas as faturas
-- Ver logs financeiros
-- Sem acesso a domínios
-
-### Gestor
-- Acesso total a todas as funcionalidades
-- Gestão de utilizadores descontinuada — usar Configurações > Equipa e Funções
-- Não pode remover seu próprio role Gestor
-
-## Segurança
-
-### Implementações
-- **Sessões endurecidas**: cookies com `HttpOnly`, `SameSite=Strict` e `Secure` (em HTTPS)
-- **CSRF**: tokens gerados por sessão; todos os formulários críticos usam POST + validação
-- **Rate Limiting**: limite básico de 5 tentativas de login em 10 minutos
-- **Prepared Statements**: toda a interação com BD usa prepared statements
-- **Password Hashing**: `password_hash()` com algoritmo bcrypt
-- **Session Regeneration**: ID de sessão regenerado após login bem-sucedido
-
-### Checklist de Implantação
-- [ ] HTTPS ativado no servidor
-- [ ] Variáveis de ambiente ou ficheiro `inc/db_credentials.php` configurado
-- [ ] Base de dados com tabelas: `users`, `domains`, `tickets`, `invoices`, `logs`, `password_resets`
-- [ ] SMTP configurado (se usar envio de emails)
-- [ ] Logs do servidor (`error_log`) monitorados
-
-## Resilência
-
-- **Dashboard**: se alguma tabela não existir, o painel apresenta 0 e regista o erro sem cair (HTTP 500)
-- **Migrações**: ficheiro `migrate.php` é idempotente (não falha em re-execuções); **não é necessário em produção**
-
-## Desenvolvimento
-
-### Instalação / Migração
-
-⚠️ **IMPORTANTE**: Use APENAS `sql/schema.sql`. Não importe ficheiros de `sql/legacy/`.
-
-Instalação de raiz:
-
+**Método 2: Variáveis de ambiente**
 ```bash
-# 1. Remover base existente (se necessário)
-mysql -u USER -p -e "DROP DATABASE IF EXISTS cybercore;"
-
-# 2. Importar schema completo
-mysql -u USER -p < sql/schema.sql
+export DB_HOST=127.0.0.1
+export DB_NAME=cybercore
+export DB_USER=cybercore
+export DB_PASS='sua_password'
 ```
 
-Ver instruções detalhadas: [INSTALL.md](INSTALL.md)
+**⚠️ Importante:** `inc/db_credentials.php` está no `.gitignore` e NUNCA deve ser commitado.
 
-Migração local (dev, opcional):
+---
 
-```bash
-php scripts/migrate.php
-```
+## 👥 Utilizadores de Teste
 
-`schema.sql` inclui todas as tabelas e seeds (settings, manutenção, permissões, serviços, changelog).
-
-### Criar Utilizadores de Teste
+Depois de importar `sql/schema.sql`:
 
 ```bash
 php scripts/sample_users.php
 ```
 
-Cria utilizadores de teste com password `Password123!`:
+Cria 5 utilizadores com password `Password123!`:
+- `gestor@example.test` (Gestor)
 - `cliente@example.test` (Cliente)
 - `suporte_cliente@example.test` (Suporte ao Cliente)
 - `suporte_finance@example.test` (Suporte Financeira)
 - `suporte_tecnica@example.test` (Suporte Técnica)
-- `gestor@example.test` (Gestor)
 
-## Estrutura de Ficheiros
+---
 
+## 🔒 Segurança
+
+- ✅ Passwords com bcrypt
+- ✅ CSRF tokens em formulários
+- ✅ Sessions com HttpOnly + SameSite=Strict
+- ✅ Prepared statements (SQL Injection)
+- ✅ Credenciais em ficheiro não versionado
+
+---
+
+## 📚 Documentação
+
+| Ficheiro | Para |
+|----------|------|
+| [SETUP.md](SETUP.md) | Setup completo, troubleshooting, deploy |
+| [docs/INSTALL.md](docs/INSTALL.md) | Instalação de raiz da BD |
+| [docs/PERMISSIONS_GUIDE.md](docs/PERMISSIONS_GUIDE.md) | Guia detalhado de permissões |
+
+---
+
+## 🆘 Problema: "using password: NO"
+
+→ **Leia [SETUP.md#troubleshooting](SETUP.md#-troubleshooting)**
+
+Resumo:
+```bash
+# Criar ficheiro no servidor
+ssh seu_servidor
+cat > inc/db_credentials.php << 'EOF'
+<?php
+define('DB_HOST', '127.0.0.1');
+define('DB_NAME', 'cybercore');
+define('DB_USER', 'cybercore');
+define('DB_PASS', 'sua_password');
+define('SITE_URL', 'https://seu-dominio.com');
+define('SITE_NAME', 'CyberCore - Área de Cliente');
+?>
+EOF
+chmod 600 inc/db_credentials.php
 ```
-.
-├── admin/            # Área administrativa
-│   ├── dashboard.php, customers.php, settings.php, etc.
-├── assets/           # Assets públicos
-│   ├── css/
-│   │   └── style.css
-│   ├── js/
-│   │   └── app.js
-│   └── uploads/      # Ficheiros carregados
-├── inc/              # Lógica reutilizável
-│   ├── auth.php
-│   ├── config.php
-│   ├── csrf.php
-│   ├── db.php
-│   ├── header.php
-│   ├── footer.php
-│   ├── mailer.php
-│   ├── permissions.php
-│   └── settings.php
-├── sql/
-│   ├── schema.sql    # ÚNICO ficheiro SQL a usar
-│   └── legacy/       # Referência histórica
-├── scripts/          # Utilitários
-│   ├── migrate.php
-│   └── sample_users.php
-├── docs/             # Documentação
-│   ├── INSTALL.md
-│   └── PERMISSIONS_GUIDE.md
-├── login.php         # Páginas públicas na raiz
-├── register.php
-├── dashboard.php
-├── support.php
-├── domains.php
-├── finance.php
-├── logs.php
-└── README.md
-```
 
-## Email
+---
 
-Por padrão, usa `mail()` do PHP. Para produção, configure SMTP via variáveis de ambiente (veja secção Configuração acima).
-
-Quando `SMTP_HOST` está vazio, usa `mail()`. Caso contrário, aguarda implementação de PHPMailer com SMTP.
-
-## Logs
-
-- Atividades são registadas na tabela `logs` (user_id, type, message, created_at)
-- Erros de sistema em `error_log` do PHP
-
-## Suporte
-
-Para questões de segurança, confira `inc/auth.php`, `inc/csrf.php` e as permissões em cada página.
-
-Para relatórios de bugs ou melhorias, contacte o administrador.
+**Última atualização:** 24 de dezembro de 2025
