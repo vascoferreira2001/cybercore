@@ -43,6 +43,18 @@ $smtp = [
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate();
 
+  // Envio de email de teste (processo dedicado + redirect PRG)
+  if (isset($_POST['send_test'])) {
+    $testEmail = trim($_POST['test_email'] ?? '');
+    if (!$testEmail || !filter_var($testEmail, FILTER_VALIDATE_EMAIL)) {
+      header('Location: settings.php?smtp_test=1&ok=0');
+      exit;
+    }
+    $sent = sendMail($testEmail, 'Teste SMTP - CyberCore', '<p>Este é um email de teste SMTP enviado em ' . date('d/m/Y H:i') . '</p>', 'Teste SMTP');
+    header('Location: settings.php?smtp_test=1&ok=' . ($sent ? '1' : '0'));
+    exit;
+  }
+
     // Eliminar imagens existentes (logo, favicon, fundo)
     if (isset($_POST['delete_logo'])) {
       $oldLogo = getSetting($pdo, 'site_logo');
@@ -246,6 +258,10 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     <div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">
       ✓ Configurações aplicadas com sucesso!
     </div>
+  <?php elseif (isset($_GET['smtp_test'])): ?>
+    <div style="background:<?php echo (isset($_GET['ok']) && $_GET['ok']==='1') ? '#e8f5e9' : '#ffebee'; ?>;color:<?php echo (isset($_GET['ok']) && $_GET['ok']==='1') ? '#2e7d32' : '#c62828'; ?>;padding:12px;border-radius:4px;margin-bottom:16px">
+      <?php echo (isset($_GET['ok']) && $_GET['ok']==='1') ? '✓ Email de teste enviado com sucesso.' : '✗ Falha ao enviar email de teste.'; ?>
+    </div>
   <?php endif; ?>
   
   <?php if (!empty($errors)): ?>
@@ -357,13 +373,7 @@ $loginBackgroundPath = getAssetPath($loginBackground);
       <label>Nome do remetente</label>
       <input type="text" name="smtp_from_name" value="<?php echo htmlspecialchars($smtp['smtp_from_name']); ?>" required>
     </div>
-    <div class="form-row">
-      <label>Email para teste</label>
-      <div style="display:flex;gap:8px;width:100%;align-items:center">
-        <input type="email" name="test_email" value="" placeholder="email@teste.com" style="flex:1">
-        <button type="submit" name="send_test" value="1" class="btn" style="background:#1976d2">Enviar Teste</button>
-      </div>
-    </div>
+    
     
     <h3>Logo do Website</h3>
     <p class="small">Dimensões recomendadas: 150x60px. Formatos: JPG, JPEG, PNG. Máximo: 2MB.</p>
@@ -427,6 +437,20 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     
     <div class="form-row">
       <button type="submit" class="btn">Guardar Configurações</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Teste de SMTP</h3>
+  <form method="post">
+    <?php echo csrf_input(); ?>
+    <div class="form-row">
+      <label>Email para teste</label>
+      <div style="display:flex;gap:8px;width:100%;align-items:center">
+        <input type="email" name="test_email" value="" placeholder="email@teste.com" style="flex:1" required>
+        <button type="submit" name="send_test" value="1" class="btn" style="background:#1976d2">Enviar Teste</button>
+      </div>
     </div>
   </form>
 </div>
