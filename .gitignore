@@ -1,5 +1,7 @@
 # Ficheiros sensíveis - não versionar
 inc/db_credentials.php
+assets/uploads/*
+!assets/uploads/.gitkeep
 
 # Outros ficheiros comuns a ignorar
 *.log

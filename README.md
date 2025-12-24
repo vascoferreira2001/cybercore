@@ -33,16 +33,25 @@ export MAIL_FROM_NAME='CyberCore'
 
 ### Alternativa: Ficheiro Local (não versionado)
 
-Se preferir usar um ficheiro em vez de variáveis de ambiente, coloque `inc/db_credentials.php` no servidor (não será commitado ao repositório):
+Se preferir usar um ficheiro em vez de variáveis de ambiente:
 
+1. **Copiar o template**:
+```bash
+cp inc/db_credentials.example.php inc/db_credentials.php
+```
+
+2. **Editar com as suas credenciais**:
 ```php
 <?php
-define('DB_HOST', 'seu-host');
-define('DB_NAME', 'sua-base');
-define('DB_USER', 'seu-utilizador');
-define('DB_PASS', 'sua-password');
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'cybercore');
+define('DB_USER', 'cybercore');
+define('DB_PASS', 'sua_password_real');
 ?>
 ```
+
+**Nota**: `inc/db_credentials.php` está no `.gitignore` e **nunca** será commitado ao Git.
+
 
 ## Rotas Principais
 
