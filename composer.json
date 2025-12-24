@@ -4,12 +4,5 @@
   "require": {
     "phpmailer/phpmailer": "^6.8"
   },
-  "scripts": {
-    "post-install-cmd": [
-      "php scripts/bootstrap_credentials.php"
-    ],
-    "post-update-cmd": [
-      "php scripts/bootstrap_credentials.php"
-    ]
-  }
+  "scripts": {}
 }
