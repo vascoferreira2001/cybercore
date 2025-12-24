@@ -1,5 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
+require_once __DIR__ . '/debug.php';
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/db.php';
@@ -10,16 +11,33 @@ header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-// Carregar logo e favicon
-$pdo = getDB();
-$siteLogo = getSetting($pdo, 'site_logo');
-$favicon = getSetting($pdo, 'favicon');
+// Carregar logo e favicon com tratamento de erro
+$siteLogo = '';
+$favicon = '';
+$siteLogoUrl = '';
+$faviconUrl = '';
+$siteLogoPath = '';
+$faviconPath = '';
 
-// Construir URLs públicas baseadas no servidor
-$siteLogoUrl = getAssetUrl($siteLogo);
-$faviconUrl = getAssetUrl($favicon);
-$siteLogoPath = getAssetPath($siteLogo);
-$faviconPath = getAssetPath($favicon);
+try {
+  $pdo = getDB();
+  if ($pdo) {
+    $siteLogo = getSetting($pdo, 'site_logo', '');
+    $favicon = getSetting($pdo, 'favicon', '');
+    
+    // Construir URLs simples
+    if ($siteLogo) {
+      $siteLogoUrl = (strpos($siteLogo, '/') === 0) ? $siteLogo : '/' . $siteLogo;
+      $siteLogoPath = $_SERVER['DOCUMENT_ROOT'] . $siteLogoUrl;
+    }
+    if ($favicon) {
+      $faviconUrl = (strpos($favicon, '/') === 0) ? $favicon : '/' . $favicon;
+      $faviconPath = $_SERVER['DOCUMENT_ROOT'] . $faviconUrl;
+    }
+  }
+} catch (Exception $e) {
+  logError('Header asset loading error: ' . $e->getMessage());
+}
 
 // Determinar se está em admin para ajustar URLs
 $inAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
