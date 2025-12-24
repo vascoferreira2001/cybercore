@@ -87,7 +87,7 @@ try {
 
         <!-- Serviços (submenu) -->
         <div class="nav-group">
-          <a href="#" class="nav-item submenu-toggle" data-submenu="services" onclick="toggleSubmenu(event, 'services')">
+          <a href="#" class="nav-item submenu-toggle" data-submenu="services">
             <span class="icon">🛠️</span> Serviços <span class="arrow">▼</span>
           </a>
           <div id="services-submenu" class="submenu">
@@ -115,7 +115,7 @@ try {
 
         <!-- Equipa (submenu) -->
         <div class="nav-group">
-          <a href="#" class="nav-item submenu-toggle" data-submenu="team" onclick="toggleSubmenu(event, 'team')">
+          <a href="#" class="nav-item submenu-toggle" data-submenu="team">
             <span class="icon">👔</span> Equipa <span class="arrow">▼</span>
           </a>
           <div id="team-submenu" class="submenu">
@@ -127,7 +127,7 @@ try {
 
         <!-- Suporte ao Cliente (submenu) -->
         <div class="nav-group">
-          <a href="#" class="nav-item submenu-toggle" data-submenu="customer-support" onclick="toggleSubmenu(event, 'customer-support')">
+          <a href="#" class="nav-item submenu-toggle" data-submenu="customer-support">
             <span class="icon">🎧</span> Suporte ao Cliente <span class="arrow">▼</span>
           </a>
           <div id="customer-support-submenu" class="submenu">
@@ -141,7 +141,7 @@ try {
         <!-- Suporte Financeiro (submenu) - Apenas Gestor e Suporte Financeira -->
         <?php if($cu && in_array($cu['role'], ['Gestor','Suporte Financeira'])): ?>
         <div class="nav-group">
-          <a href="#" class="nav-item submenu-toggle" data-submenu="finance" onclick="toggleSubmenu(event, 'finance')">
+          <a href="#" class="nav-item submenu-toggle" data-submenu="finance">
             <span class="icon">💰</span> Suporte Financeiro <span class="arrow">▼</span>
           </a>
           <div id="finance-submenu" class="submenu">
@@ -154,7 +154,7 @@ try {
         <!-- Configuração (submenu) - Apenas Gestor -->
         <?php if($cu && $cu['role'] === 'Gestor'): ?>
         <div class="nav-group">
-          <a href="#" class="nav-item submenu-toggle" data-submenu="settings" onclick="toggleSubmenu(event, 'settings')">
+          <a href="#" class="nav-item submenu-toggle" data-submenu="settings">
             <span class="icon">⚙️</span> Configuração <span class="arrow">▼</span>
           </a>
           <div id="settings-submenu" class="submenu">

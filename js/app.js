@@ -13,13 +13,25 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
   
-  // Inicializar submenus com event delegation
+  // Inicializar submenus
   initializeSubmenus();
+  
+  // Re-inicializar submenus em caso de mudanças no DOM
+  var observer = new MutationObserver(function(mutations) {
+    initializeSubmenus();
+  });
+  observer.observe(document.querySelector('.sidebar-nav'), { 
+    childList: true, 
+    subtree: true 
+  });
 });
 
-// Toggle submenu no sidebar
+// Toggle submenu - função global
 function toggleSubmenu(event, submenuId) {
-  if(event) event.preventDefault();
+  if(event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
   var submenu = document.getElementById(submenuId + '-submenu');
   if(submenu) {
     submenu.classList.toggle('active');
@@ -31,27 +43,20 @@ function toggleSubmenu(event, submenuId) {
 function initializeSubmenus() {
   var submenuToggles = document.querySelectorAll('.submenu-toggle');
   submenuToggles.forEach(function(toggle) {
-    // Remover listeners antigos
-    toggle.removeEventListener('click', handleSubmenuToggle);
-    // Adicionar novo listener
-    toggle.addEventListener('click', handleSubmenuToggle);
+    // Remover listeners antigos para evitar duplicatas
+    var newToggle = toggle.cloneNode(true);
+    toggle.parentNode.replaceChild(newToggle, toggle);
+    newToggle.addEventListener('click', handleSubmenuToggle);
   });
 }
 
 // Handler para submenu toggle
 function handleSubmenuToggle(event) {
   event.preventDefault();
+  event.stopPropagation();
   
-  // Extrair o ID do data-submenu ou do onclick
+  // Extrair o ID do data-submenu
   var submenuId = this.getAttribute('data-submenu');
-  if(!submenuId) {
-    // Tentar extrair do onclick
-    var onclickAttr = this.getAttribute('onclick');
-    if(onclickAttr) {
-      var match = onclickAttr.match(/toggleSubmenu\([^,]*,\s*'([^']+)'\)/);
-      if(match) submenuId = match[1];
-    }
-  }
   
   if(submenuId) {
     var submenu = document.getElementById(submenuId + '-submenu');

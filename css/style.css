@@ -13,11 +13,12 @@ body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f5f7fa;display:
 .nav-item .icon{margin-right:8px;font-size:16px}
 .nav-item .arrow{font-size:10px;float:right;margin-top:4px}
 .nav-group{margin:0}
-.submenu-toggle{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05)}
-.submenu{display:none;flex-direction:column;background:rgba(0,0,0,0.2);border-radius:4px;margin-top:4px;overflow:hidden}
-.submenu.active{display:flex}
-.nav-item-sub{display:block;padding:8px 12px 8px 32px;color:#b0d4e8;text-decoration:none;font-size:13px;transition:all 0.2s;border-left:2px solid transparent}
-.nav-item-sub:hover{background:rgba(255,255,255,0.08);color:#fff;border-left-color:#0b84a5}
+.submenu-toggle{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);cursor:pointer !important}
+.submenu-toggle:hover{background:rgba(255,255,255,0.1)}
+.submenu{display:none;flex-direction:column;background:rgba(0,0,0,0.3);border-radius:4px;margin-top:4px;overflow:hidden;padding:4px 0}
+.submenu.active{display:flex !important}
+.nav-item-sub{display:block;padding:10px 12px 10px 32px;color:#b0d4e8;text-decoration:none;font-size:13px;transition:all 0.2s;border-left:2px solid transparent;cursor:pointer}
+.nav-item-sub:hover{background:rgba(255,255,255,0.08);color:#fff;border-left-color:#4CAF50}
 .content{flex:1;padding:24px;overflow-y:auto}
 .card{background:#fff;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);margin-bottom:16px}
 .form-row{margin-bottom:12px}
