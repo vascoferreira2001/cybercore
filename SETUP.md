@@ -54,6 +54,33 @@ cat inc/db_credentials.php
 
 **⚠️ IMPORTANTE:** `inc/db_credentials.php` **NÃO deve estar no Git**. Está no `.gitignore`.
 
+### Opção 1.1: Bootstrap automático (recomendado)
+
+Se preferir automatizar a criação do ficheiro de credenciais (a partir de variáveis de ambiente ou por perguntas interativas), use o script:
+
+```bash
+php scripts/bootstrap_credentials.php
+```
+
+O script irá:
+- Ler `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `SITE_URL`, `SITE_NAME` do ambiente (se existirem)
+- Perguntar no terminal (modo interativo) caso faltem valores
+- Gerar `inc/db_credentials.php` e definir permissões `600`
+
+### Opção 1.2: Via Composer (auto)
+
+Se usar Composer, o projeto já executa o bootstrap automaticamente após `install` ou `update`:
+
+```bash
+composer install
+```
+
+Isto cria `inc/db_credentials.php` se ainda não existir. Para atualizar credenciais, pode correr:
+
+```bash
+composer update
+```
+
 ### Opção 2: Variáveis de Ambiente
 
 Se preferir não usar ficheiro local:

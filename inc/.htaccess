@@ -1,0 +1,11 @@
+# Bloquear acesso direto a ficheiros sensíveis na pasta inc/
+# (PHP continuará a poder incluir estes ficheiros via filesystem)
+
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+
+# Compatibilidade com Apache 2.2
+<IfModule !mod_authz_core.c>
+  Deny from all
+</IfModule>
