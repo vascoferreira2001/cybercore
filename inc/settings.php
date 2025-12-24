@@ -24,6 +24,43 @@ function setSetting($pdo, $key, $value) {
     }
 }
 
+// Definições gerais (valores por defeito)
+function getGeneralSettingsDefaults() {
+    return [
+        'site_language' => 'pt-PT',
+        'site_timezone' => 'Europe/Lisbon',
+        'date_format' => 'd/m/Y',
+        'time_format' => 'H:i',
+        'week_start' => 'Segunda',
+        'weekend_days' => 'Sábado,Domingo',
+        'currency' => 'EUR',
+        'currency_symbol' => '€',
+        'currency_position' => 'left',
+        'decimal_separator' => ',',
+        'decimal_precision' => '2',
+        'cron_interval_minutes' => '10',
+    ];
+}
+
+// Ler definições gerais aplicando defaults
+function getGeneralSettings($pdo) {
+    $defaults = getGeneralSettingsDefaults();
+    $settings = [];
+    foreach ($defaults as $key => $value) {
+        $settings[$key] = getSetting($pdo, $key, $value);
+    }
+    return $settings;
+}
+
+// Aplicar definições globais (timezone)
+function applyGeneralSettings($pdo) {
+    $settings = getGeneralSettings($pdo);
+    if (!empty($settings['site_timezone'])) {
+        date_default_timezone_set($settings['site_timezone']);
+    }
+    return $settings;
+}
+
 // Obter URL pública do ficheiro
 function getAssetUrl($relativePath) {
     if (!$relativePath) return '';
