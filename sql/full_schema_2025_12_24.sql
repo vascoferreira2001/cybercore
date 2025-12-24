@@ -1,8 +1,11 @@
--- Schema para CyberCore Área de Cliente (MySQL)
+-- Full schema and seeds for CyberCore (24-12-2025)
+-- Use for fresh installs; for existing DBs, run migrations separately.
 
 CREATE DATABASE IF NOT EXISTS cybercore CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE cybercore;
 
+-- Users, tickets, logs, invoices
+-- (from schema.sql, updated with company_name)
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   first_name VARCHAR(100) NOT NULL,
@@ -16,7 +19,6 @@ CREATE TABLE IF NOT EXISTS users (
   nif VARCHAR(20) NOT NULL,
   entity_type ENUM('Singular','Coletiva') NOT NULL DEFAULT 'Singular',
   company_name VARCHAR(255) DEFAULT NULL,
-  role ENUM('Cliente','Suporte ao Cliente','Suporte Financeira','Suporte Técnica','Gestor') NOT NULL DEFAULT 'Cliente',
   password_hash VARCHAR(255) NOT NULL,
   receive_news TINYINT(1) DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -32,7 +34,30 @@ CREATE TABLE IF NOT EXISTS tickets (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Tabela de domínios
+CREATE TABLE IF NOT EXISTS logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NULL,
+  type VARCHAR(100) NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS invoices (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  reference VARCHAR(100) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  due_date DATE,
+  status ENUM('unpaid','paid','overdue') DEFAULT 'unpaid',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Roles and domains
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS role ENUM('Cliente','Suporte ao Cliente','Suporte Financeira','Suporte Técnica','Gestor') NOT NULL DEFAULT 'Cliente';
+
 CREATE TABLE IF NOT EXISTS domains (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -45,7 +70,7 @@ CREATE TABLE IF NOT EXISTS domains (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Tabela de configurações e seeds
+-- Settings + seeds, departments, permissions, categories, taxes, payment methods
 CREATE TABLE IF NOT EXISTS settings (
   id INT AUTO_INCREMENT PRIMARY KEY,
   setting_key VARCHAR(100) NOT NULL UNIQUE,
@@ -96,7 +121,6 @@ INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
 ('maintenance_exception_roles', 'Gestor'),
 ('maintenance_hide_menus', '[]');
 
--- Estrutura de departamentos e permissões
 CREATE TABLE IF NOT EXISTS departments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL UNIQUE,
@@ -133,7 +157,30 @@ INSERT IGNORE INTO client_permissions (permission_key, allowed) VALUES
 ('client_view_documents', 1),
 ('client_add_documents', 0);
 
--- Tabela para resets de password
+CREATE TABLE IF NOT EXISTS service_categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS taxes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  rate DECIMAL(5,2) NOT NULL,
+  active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS payment_methods (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  gateway VARCHAR(100) DEFAULT '',
+  active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Password resets
 CREATE TABLE IF NOT EXISTS password_resets (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -143,7 +190,7 @@ CREATE TABLE IF NOT EXISTS password_resets (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Tabelas de serviços
+-- Services tables
 CREATE TABLE IF NOT EXISTS web_hosting (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -213,39 +260,3 @@ CREATE TABLE IF NOT EXISTS social_media_management (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
-CREATE TABLE IF NOT EXISTS logs (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NULL,
-  type VARCHAR(100) NOT NULL,
-  message TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS invoices (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  reference VARCHAR(100) NOT NULL,
-  amount DECIMAL(10,2) NOT NULL,
-  due_date DATE,
-  status ENUM('unpaid','paid','overdue') DEFAULT 'unpaid',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- Tabela de changelog
-CREATE TABLE IF NOT EXISTS changelog (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    version VARCHAR(50) NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description LONGTEXT,
-    release_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_version (version),
-    INDEX idx_date (release_date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT IGNORE INTO changelog (version, title, description, release_date) VALUES 
-('1.0.0', 'Versão Inicial', 'Lançamento inicial do CyberCore com funcionalidades de autenticação, gestão de clientes e painel administrativo', NOW());

@@ -4,6 +4,15 @@ require_once __DIR__ . '/inc/csrf.php';
 require_once __DIR__ . '/inc/settings.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+$pdo = getDB();
+$maintenanceDisabled = getSetting($pdo, 'maintenance_disable_login', '0') === '1';
+$maintenanceMessage = trim(getSetting($pdo, 'maintenance_message', ''));
+$maintenanceExceptionsRaw = getSetting($pdo, 'maintenance_exception_roles', 'Gestor');
+$maintenanceExceptions = array_filter(array_map('trim', explode(',', $maintenanceExceptionsRaw)));
+if (empty($maintenanceExceptions)) {
+  $maintenanceExceptions = ['Gestor'];
+}
+
 $error = '';
 // Basic rate limiting: max 5 attempts per 10 minutes per session
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -17,18 +26,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } else {
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
-    $pdo = getDB();
     $stmt = $pdo->prepare('SELECT id, role, password_hash FROM users WHERE email = ?');
     $stmt->execute([$email]);
     $u = $stmt->fetch();
     if ($u && password_verify($password, $u['password_hash'])) {
-      session_regenerate_id(true);
-      $_SESSION['user_id'] = $u['id'];
-      $_SESSION['role'] = $u['role'];
-      $_SESSION['login_attempts'] = []; // reset attempts on success
-      $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login','User logged in']);
-      header('Location: dashboard.php');
-      exit;
+      $isException = in_array($u['role'], $maintenanceExceptions, true);
+      if ($maintenanceDisabled && !$isException) {
+        $error = $maintenanceMessage ?: 'Login temporariamente desativado devido a manutenção.';
+        $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login_blocked','Login bloqueado por manutenção']);
+      } else {
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = $u['id'];
+        $_SESSION['role'] = $u['role'];
+        $_SESSION['login_attempts'] = []; // reset attempts on success
+        $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login','User logged in']);
+        header('Location: dashboard.php');
+        exit;
+      }
     } else {
       $attempts[] = $now;
       $_SESSION['login_attempts'] = $attempts;
@@ -38,7 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Carregar background
-$pdo = getDB();
 $loginBackground = getSetting($pdo, 'login_background');
 $backgroundUrl = getAssetUrl($loginBackground);
 $backgroundPath = getAssetPath($loginBackground);
@@ -56,6 +69,20 @@ if ($loginBackground && file_exists($backgroundPath)) {
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body style="<?php echo $backgroundStyle; ?>">
+<?php if ($maintenanceDisabled): ?>
+  <div class="maintenance-overlay" id="maintenanceOverlay">
+    <div class="maintenance-modal">
+      <strong>Modo de Manutenção</strong>
+      <p style="margin:8px 0 0 0"><?php echo htmlspecialchars($maintenanceMessage ?: 'O login está temporariamente desativado para clientes.'); ?></p>
+      <p class="small" style="margin:8px 0 0 0">Se for da equipa autorizada (ex.: <?php echo htmlspecialchars(implode(', ', $maintenanceExceptions)); ?>), pode fechar este aviso e iniciar sessão.</p>
+      <button type="button" class="btn" style="margin-top:12px" onclick="document.getElementById('maintenanceOverlay').style.display='none';">Continuar</button>
+    </div>
+  </div>
+  <style>
+    .maintenance-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1000; }
+    .maintenance-modal { background:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:16px 18px; border-radius:8px; box-shadow:0 12px 30px rgba(0,0,0,0.25); max-width:520px; width:92%; }
+  </style>
+<?php endif; ?>
 <main style="max-width:480px;margin:40px auto">
   <div class="card">
     <h2>Login</h2>

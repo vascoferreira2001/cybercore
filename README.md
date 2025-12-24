@@ -110,15 +110,21 @@ define('DB_PASS', 'sua-password');
 
 ## Desenvolvimento
 
-### Migração Local (Opcional)
+### Instalação / Migração
 
-Para ambiente de desenvolvimento:
+Instalação de raiz (recomendado):
+
+```bash
+mysql -u USER -p < sql/schema.sql
+```
+
+Migração local (dev, opcional):
 
 ```bash
 php migrate.php
 ```
 
-Este script é **idempotente** e cria/verifica as tabelas necessárias. Em produção, **não executar**.
+`schema.sql` inclui todas as tabelas e seeds (settings, manutenção, permissões, serviços, changelog).
 
 ### Criar Utilizadores de Teste
 
@@ -146,10 +152,8 @@ Cria utilizadores de teste com password `Password123!`:
 │   ├── footer.php        # Rodapé
 │   └── mailer.php        # Envio de emails
 ├── sql/
-│   ├── schema.sql        # Schema base (dev)
-│   ├── roles_and_domains.sql  # Tabela de domínios (dev)
-│   ├── services.sql      # Tabelas de serviços (dev)
-│   └── password_resets.sql    # Tabela de resets (dev)
+│   ├── schema.sql        # ESQUEMA CONSOLIDADO (usar este)
+│   └── legacy/           # Scripts antigos (referência, não usar)
 ├── js/
 │   └── app.js            # Validação cliente simples
 ├── css/
