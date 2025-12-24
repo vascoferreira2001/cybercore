@@ -22,7 +22,11 @@ $shouldRedirect = false;
 
 $generalDefaults = getGeneralSettingsDefaults();
 $generalSettings = getGeneralSettings($pdo);
-$cronUrl = getSetting($pdo, 'cron_url', '');
+$cronDefaultUrl = rtrim(SITE_URL, '/') . '/cron.php';
+$cronUrl = getSetting($pdo, 'cron_url', $cronDefaultUrl);
+if (!$cronUrl) {
+    $cronUrl = $cronDefaultUrl;
+}
 $cronLastRun = getSetting($pdo, 'cron_last_run', '');
 $cronInterval = getSetting($pdo, 'cron_interval_minutes', $generalDefaults['cron_interval_minutes']);
 $smtp = [
@@ -63,7 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // Cron settings
   $cronUrlPost = trim($_POST['cron_url'] ?? $cronUrl);
-  if ($cronUrlPost && !filter_var($cronUrlPost, FILTER_VALIDATE_URL)) {
+    if (!$cronUrlPost) {
+        $cronUrlPost = $cronDefaultUrl;
+    }
     $errors[] = 'Cron URL inválida.';
   } else {
     setSetting($pdo, 'cron_url', $cronUrlPost);
@@ -270,10 +276,10 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     
     <hr style="margin:24px 0;border:none;border-top:1px solid #ddd">
     <h3>Cron Job</h3>
-    <p class="small">Executar a cada 10 minutos. Exemplo de entrada crontab:<br>*/10 * * * * curl -s "<?php echo htmlspecialchars($cronUrl ?: (SITE_URL . '/cron.php')); ?>"</p>
+    <p class="small">Executar a cada 10 minutos. Exemplo de entrada crontab:<br>*/10 * * * * curl -s "<?php echo htmlspecialchars($cronUrl ?: $cronDefaultUrl); ?>"</p>
     <div class="form-row">
       <label>Link para Cron</label>
-      <input type="url" name="cron_url" value="<?php echo htmlspecialchars($cronUrl); ?>" placeholder="https://seu-dominio.com/cron.php?token=xyz" required>
+      <input type="url" name="cron_url" value="<?php echo htmlspecialchars($cronUrl ?: $cronDefaultUrl); ?>" placeholder="<?php echo htmlspecialchars($cronDefaultUrl); ?>" required>
     </div>
     <div class="form-row">
       <label>Intervalo</label>
