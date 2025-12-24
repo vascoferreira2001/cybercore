@@ -1,5 +1,6 @@
 <?php
-require_once __DIR__ . '/inc/db.php';
+require_once __DIR__ . '/../inc/config.php';
+require_once __DIR__ . '/../inc/db.php';
 // Script para criar utilizadores de teste com diferentes roles.
 // Execute uma vez via browser ou CLI: php sample_users.php
 
