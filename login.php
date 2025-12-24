@@ -3,6 +3,7 @@ require_once __DIR__ . '/inc/config.php';
 require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/csrf.php';
 require_once __DIR__ . '/inc/settings.php';
+require_once __DIR__ . '/inc/maintenance.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 $pdo = getDB();
@@ -71,18 +72,7 @@ if ($loginBackground && file_exists($backgroundPath)) {
 </head>
 <body style="<?php echo $backgroundStyle; ?>">
 <?php if ($maintenanceDisabled): ?>
-  <div class="maintenance-overlay" id="maintenanceOverlay">
-    <div class="maintenance-modal">
-      <strong>Modo de Manutenção</strong>
-      <p style="margin:8px 0 0 0"><?php echo htmlspecialchars($maintenanceMessage ?: 'O login está temporariamente desativado para clientes.'); ?></p>
-      <p class="small" style="margin:8px 0 0 0">Se for da equipa autorizada (ex.: <?php echo htmlspecialchars(implode(', ', $maintenanceExceptions)); ?>), pode fechar este aviso e iniciar sessão.</p>
-      <button type="button" class="btn" style="margin-top:12px" onclick="document.getElementById('maintenanceOverlay').style.display='none';">Continuar</button>
-    </div>
-  </div>
-  <style>
-    .maintenance-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1000; }
-    .maintenance-modal { background:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:16px 18px; border-radius:8px; box-shadow:0 12px 30px rgba(0,0,0,0.25); max-width:520px; width:92%; }
-  </style>
+  <?php renderMaintenanceModal($maintenanceMessage ?: 'O login está temporariamente desativado para clientes.', ['disable_form' => false]); ?>
 <?php endif; ?>
 <main style="max-width:480px;margin:40px auto">
   <div class="card">

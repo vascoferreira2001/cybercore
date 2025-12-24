@@ -3,6 +3,8 @@ require_once __DIR__ . '/inc/config.php';
 require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/csrf.php';
 require_once __DIR__ . '/inc/settings.php';
+require_once __DIR__ . '/inc/maintenance.php';
+require_once __DIR__ . '/inc/debug.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 $pdo = getDB();
@@ -11,50 +13,93 @@ $maintenanceMessage = trim(getSetting($pdo, 'maintenance_message', ''));
 
 $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  csrf_validate();
-  $first = trim($_POST['first_name'] ?? '');
-  $last = trim($_POST['last_name'] ?? '');
-  $email = trim($_POST['email'] ?? '');
-  $country = $_POST['country'] ?? '';
-  $address = $_POST['address'] ?? '';
-  $city = $_POST['city'] ?? '';
-  $postal = $_POST['postal_code'] ?? '';
-  $phone = $_POST['phone'] ?? '';
-  $nif = preg_replace('/\D/','',($_POST['nif'] ?? ''));
-  $entity = $_POST['entity_type'] ?? 'Singular';
-  $company = trim($_POST['company_name'] ?? '');
-  $password = $_POST['password'] ?? '';
-  $receive_news = isset($_POST['receive_news']) ? 1 : 0;
+  try {
+    csrf_validate();
+    $first = trim($_POST['first_name'] ?? '');
+    $last = trim($_POST['last_name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $country = $_POST['country'] ?? '';
+    $address = $_POST['address'] ?? '';
+    $city = $_POST['city'] ?? '';
+    $postal = $_POST['postal_code'] ?? '';
+    $phone = $_POST['phone'] ?? '';
+    $nif = preg_replace('/\D/','',($_POST['nif'] ?? ''));
+    $entity = $_POST['entity_type'] ?? 'Singular';
+    $company = trim($_POST['company_name'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $receive_news = isset($_POST['receive_news']) ? 1 : 0;
 
-  if ($maintenanceDisabled) {
-    $errors[] = $maintenanceMessage ?: 'Criação de conta temporariamente desativada devido a manutenção.';
-  }
-
-  if ($first === '' || $last === '' || $email === '' || $nif === '') {
-    $errors[] = 'Preencha os campos obrigatórios.';
-  }
-  if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email inválido.';
-  if (!preg_match('/^\d{4}-\d{3}$/', $postal)) $errors[] = 'Código postal deve ser no formato 1234-567.';
-  if (!preg_match('/^\d{9}$/', $nif)) $errors[] = 'NIF inválido (9 dígitos).';
-  if ($entity === 'Coletiva' && $company === '') $errors[] = 'Nome da empresa é obrigatório para Entidade Coletiva.';
-  if (strlen($password) < 8) $errors[] = 'A password deve ter pelo menos 8 caracteres.';
-
-  if (empty($errors)) {
-    $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?');
-    $stmt->execute([$email]);
-    if ($stmt->fetch()) {
-      $errors[] = 'Já existe um utilizador com esse email.';
-    } else {
-      $hash = password_hash($password, PASSWORD_DEFAULT);
-      $role = 'Cliente';
-      $ins = $pdo->prepare('INSERT INTO users (first_name,last_name,email,country,address,city,postal_code,phone,nif,entity_type,company_name,password_hash,role,receive_news) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-      $ins->execute([$first,$last,$email,$country,$address,$city,$postal,$phone,$nif,$entity,$company,$hash,$role,$receive_news]);
-      $userId = $pdo->lastInsertId();
-      $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$userId,'registration','User registered']);
-      $_SESSION['user_id'] = $userId;
-      header('Location: dashboard.php');
-      exit;
+    if ($maintenanceDisabled) {
+      $errors[] = $maintenanceMessage ?: 'Criação de conta temporariamente desativada devido a manutenção.';
     }
+
+    if ($first === '' || $last === '' || $email === '' || $nif === '') {
+      $errors[] = 'Preencha os campos obrigatórios.';
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email inválido.';
+    if (!preg_match('/^\d{4}-\d{3}$/', $postal)) $errors[] = 'Código postal deve ser no formato 1234-567.';
+    if (!preg_match('/^\d{9}$/', $nif)) $errors[] = 'NIF inválido (9 dígitos).';
+    if ($entity === 'Coletiva' && $company === '') $errors[] = 'Nome da empresa é obrigatório para Entidade Coletiva.';
+    if (strlen($password) < 8) $errors[] = 'A password deve ter pelo menos 8 caracteres.';
+
+    if (empty($errors)) {
+      $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?');
+      $stmt->execute([$email]);
+      if ($stmt->fetch()) {
+        $errors[] = 'Já existe um utilizador com esse email.';
+      } else {
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $role = 'Cliente';
+
+        // Obter colunas existentes na tabela para compatibilidade com esquemas antigos
+        $colsStmt = $pdo->query('SHOW COLUMNS FROM users');
+        $existingCols = array_map(function($r){ return $r['Field']; }, $colsStmt->fetchAll());
+
+        $dataMap = [
+          'first_name'    => $first,
+          'last_name'     => $last,
+          'email'         => $email,
+          'country'       => $country,
+          'address'       => $address,
+          'city'          => $city,
+          'postal_code'   => $postal,
+          'phone'         => $phone,
+          'nif'           => $nif,
+          'entity_type'   => $entity,
+          'company_name'  => $company,
+          'password_hash' => $hash,
+          'role'          => $role,
+          'receive_news'  => $receive_news,
+        ];
+
+        $insertCols = [];
+        $insertVals = [];
+        foreach ($dataMap as $col => $val) {
+          if (in_array($col, $existingCols, true)) {
+            $insertCols[] = $col;
+            $insertVals[] = $val;
+          }
+        }
+
+        if (empty($insertCols)) {
+          throw new RuntimeException('Nenhuma coluna válida encontrada para inserção na tabela users.');
+        }
+
+        $placeholders = implode(',', array_fill(0, count($insertCols), '?'));
+        $sql = 'INSERT INTO users (' . implode(',', $insertCols) . ') VALUES (' . $placeholders . ')';
+        $ins = $pdo->prepare($sql);
+        $ins->execute($insertVals);
+
+        $userId = $pdo->lastInsertId();
+        $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$userId,'registration','User registered']);
+        $_SESSION['user_id'] = $userId;
+        header('Location: dashboard.php');
+        exit;
+      }
+    }
+  } catch (Throwable $e) {
+    logError('Erro no registo: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+    $errors[] = 'Ocorreu um erro ao processar o seu registo. Tente novamente mais tarde.';
   }
 }
 ?>
@@ -68,21 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 <?php if ($maintenanceDisabled): ?>
-  <div class="maintenance-overlay" id="maintenanceOverlay">
-    <div class="maintenance-modal">
-      <strong>Modo de Manutenção</strong>
-      <p style="margin:8px 0 0 0"><?php echo htmlspecialchars($maintenanceMessage ?: 'Criação de conta temporariamente desativada.'); ?></p>
-    </div>
-  </div>
-  <style>
-    .maintenance-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1000; }
-    .maintenance-modal { background:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:16px 18px; border-radius:8px; box-shadow:0 12px 30px rgba(0,0,0,0.25); max-width:520px; width:92%; text-align:center; }
-  </style>
-  <script>
-    document.addEventListener('DOMContentLoaded', function(){
-      document.querySelectorAll('form input, form button, form select').forEach(function(el){ el.setAttribute('disabled','disabled'); });
-    });
-  </script>
+  <?php renderMaintenanceModal($maintenanceMessage ?: 'Criação de conta temporariamente desativada.', ['disable_form' => true]); ?>
 <?php endif; ?>
 <main style="max-width:800px;margin:24px auto">
   <div class="card">

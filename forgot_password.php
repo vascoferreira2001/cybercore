@@ -4,6 +4,7 @@ require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/mailer.php';
 require_once __DIR__ . '/inc/csrf.php';
 require_once __DIR__ . '/inc/settings.php';
+require_once __DIR__ . '/inc/maintenance.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 $pdo = getDB();
 $maintenanceDisabled = getSetting($pdo, 'maintenance_disable_login', '0') === '1';
@@ -43,21 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 <?php if ($maintenanceDisabled): ?>
-  <div class="maintenance-overlay" id="maintenanceOverlay">
-    <div class="maintenance-modal">
-      <strong>Modo de Manutenção</strong>
-      <p style="margin:8px 0 0 0"><?php echo htmlspecialchars($maintenanceMessage ?: 'A recuperação de senha está temporariamente desativada.'); ?></p>
-    </div>
-  </div>
-  <style>
-    .maintenance-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1000; }
-    .maintenance-modal { background:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:16px 18px; border-radius:8px; box-shadow:0 12px 30px rgba(0,0,0,0.25); max-width:520px; width:92%; text-align:center; }
-  </style>
-  <script>
-    document.addEventListener('DOMContentLoaded', function(){
-      document.querySelectorAll('form input, form button').forEach(function(el){ el.setAttribute('disabled','disabled'); });
-    });
-  </script>
+  <?php renderMaintenanceModal($maintenanceMessage ?: 'A recuperação de senha está temporariamente desativada.', ['disable_form' => true]); ?>
 <?php endif; ?>
 <main style="max-width:480px;margin:40px auto">
   <div class="card">
