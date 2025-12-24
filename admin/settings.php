@@ -238,6 +238,13 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     <a href="settings.php?tab=localizacao" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='localizacao'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='localizacao'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='localizacao'?'bold':'normal'; ?>;text-decoration:none">Localização e Formatos</a>
     <a href="settings.php?tab=email" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='email'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='email'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='email'?'bold':'normal'; ?>;text-decoration:none">Configuração de Email</a>
     <a href="settings.php?tab=cron" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='cron'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='cron'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='cron'?'bold':'normal'; ?>;text-decoration:none">Cron Job</a>
+    <a href="settings.php?tab=equipa" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='equipa'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='equipa'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='equipa'?'bold':'normal'; ?>;text-decoration:none">Equipa</a>
+    <a href="settings.php?tab=funcoes" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='funcoes'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='funcoes'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='funcoes'?'bold':'normal'; ?>;text-decoration:none">Funções da Equipa</a>
+    <a href="settings.php?tab=cliente" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='cliente'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='cliente'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='cliente'?'bold':'normal'; ?>;text-decoration:none">Permissões do Cliente</a>
+    <a href="settings.php?tab=empresa" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='empresa'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='empresa'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='empresa'?'bold':'normal'; ?>;text-decoration:none">Empresa</a>
+    <a href="settings.php?tab=categorias" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='categorias'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='categorias'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='categorias'?'bold':'normal'; ?>;text-decoration:none">Categorias de Serviços</a>
+    <a href="settings.php?tab=impostos" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='impostos'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='impostos'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='impostos'?'bold':'normal'; ?>;text-decoration:none">Impostos</a>
+    <a href="settings.php?tab=pagamentos" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='pagamentos'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='pagamentos'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='pagamentos'?'bold':'normal'; ?>;text-decoration:none">Métodos de Pagamento</a>
     <a href="settings.php?tab=modelos" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='modelos'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='modelos'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='modelos'?'bold':'normal'; ?>;text-decoration:none">Modelos de Email</a>
     <a href="settings.php?tab=notificacoes" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='notificacoes'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='notificacoes'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='notificacoes'?'bold':'normal'; ?>;text-decoration:none">Notificações</a>
     <a href="settings.php?tab=integracao" style="padding:12px 16px;cursor:pointer;border-bottom:3px solid <?php echo $activeTab==='integracao'?'#1976d2':'transparent'; ?>;color:<?php echo $activeTab==='integracao'?'#1976d2':'#666'; ?>;font-weight:<?php echo $activeTab==='integracao'?'bold':'normal'; ?>;text-decoration:none">Integração</a>
@@ -459,6 +466,441 @@ $loginBackgroundPath = getAssetPath($loginBackground);
           </div>
         </div>
       </form>
+    </div>
+  <?php endif; ?>
+  
+  <!-- TAB: EQUIPA (Departamentos) -->
+  <?php if ($activeTab === 'equipa'): ?>
+    <?php 
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_department'])) {
+        $name = trim($_POST['department_name'] ?? '');
+        if ($name !== '') {
+          $stmt = $pdo->prepare('INSERT IGNORE INTO departments (name, active) VALUES (?, 1)');
+          $stmt->execute([$name]);
+          echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Departamento adicionado.</div>';
+        }
+      }
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_department'])) {
+        $id = intval($_POST['department_id'] ?? 0);
+        $newActive = intval($_POST['new_active'] ?? 1);
+        if ($id > 0) {
+          $stmt = $pdo->prepare('UPDATE departments SET active = ? WHERE id = ?');
+          $stmt->execute([$newActive, $id]);
+        }
+      }
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_department'])) {
+        $id = intval($_POST['department_id'] ?? 0);
+        if ($id > 0) {
+          $pdo->prepare('DELETE FROM department_permissions WHERE department_id = ?')->execute([$id]);
+          $pdo->prepare('DELETE FROM departments WHERE id = ?')->execute([$id]);
+        }
+      }
+      $departments = $pdo->query('SELECT * FROM departments ORDER BY name')->fetchAll();
+    ?>
+    <form method="post">
+      <?php echo csrf_input(); ?>
+      <h3>Departamentos</h3>
+      <p class="small">Criar e gerir departamentos da equipa. Por defeito: Suporte ao Cliente, Suporte Técnico, Suporte Financeiro.</p>
+      <div class="form-row">
+        <label>Novo departamento</label>
+        <div style="display:flex;gap:8px;width:100%;align-items:center">
+          <input type="text" name="department_name" placeholder="Nome do Departamento" style="flex:1" required>
+          <button type="submit" name="add_department" value="1" class="btn">Adicionar</button>
+        </div>
+      </div>
+    </form>
+    <div style="margin-top:16px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:#f7f7f7">
+            <th style="text-align:left;padding:8px;border:1px solid #ddd">Departamento</th>
+            <th style="text-align:left;padding:8px;border:1px solid #ddd">Estado</th>
+            <th style="text-align:left;padding:8px;border:1px solid #ddd">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($departments as $d): ?>
+            <tr>
+              <td style="padding:8px;border:1px solid #ddd"><?php echo htmlspecialchars($d['name']); ?></td>
+              <td style="padding:8px;border:1px solid #ddd"><?php echo $d['active'] ? 'Ativo' : 'Inativo'; ?></td>
+              <td style="padding:8px;border:1px solid #ddd">
+                <form method="post" style="display:inline-block;margin-right:6px">
+                  <?php echo csrf_input(); ?>
+                  <input type="hidden" name="department_id" value="<?php echo (int)$d['id']; ?>">
+                  <input type="hidden" name="new_active" value="<?php echo $d['active']?0:1; ?>">
+                  <button type="submit" name="toggle_department" value="1" class="btn" style="background:#1976d2">
+                    <?php echo $d['active'] ? 'Desativar' : 'Ativar'; ?>
+                  </button>
+                </form>
+                <form method="post" style="display:inline-block" onsubmit="return confirm('Eliminar este departamento?');">
+                  <?php echo csrf_input(); ?>
+                  <input type="hidden" name="department_id" value="<?php echo (int)$d['id']; ?>">
+                  <button type="submit" name="delete_department" value="1" class="btn" style="background:#c62828">Remover</button>
+                </form>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
+  
+  <!-- TAB: FUNÇÕES DA EQUIPA (Permissões por departamento) -->
+  <?php if ($activeTab === 'funcoes'): ?>
+    <?php 
+      $departments = $pdo->query('SELECT * FROM departments ORDER BY name')->fetchAll();
+      $resources = ['dashboard','tickets','customers','services','finance','settings','reports'];
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_dept_permissions'])) {
+        foreach ($_POST['perm'] ?? [] as $deptId => $byRes) {
+          foreach ($byRes as $res => $flags) {
+            $stmt = $pdo->prepare('INSERT INTO department_permissions (department_id, resource, can_view, can_edit, can_delete, can_operate) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE can_view=VALUES(can_view), can_edit=VALUES(can_edit), can_delete=VALUES(can_delete), can_operate=VALUES(can_operate)');
+            $stmt->execute([$deptId, $res, isset($flags['view'])?1:0, isset($flags['edit'])?1:0, isset($flags['delete'])?1:0, isset($flags['operate'])?1:0]);
+          }
+        }
+        echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Permissões da equipa atualizadas.</div>';
+      }
+      // Carregar permissões atuais
+      $perms = [];
+      $rows = $pdo->query('SELECT * FROM department_permissions')->fetchAll();
+      foreach ($rows as $r) {
+        $perms[$r['department_id']][$r['resource']] = $r;
+      }
+    ?>
+    <form method="post">
+      <?php echo csrf_input(); ?>
+      <h3>Permissões por Departamento</h3>
+      <div style="overflow:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:#f7f7f7">
+              <th style="padding:8px;border:1px solid #ddd">Departamento</th>
+              <?php foreach ($resources as $res): ?>
+                <th style="padding:8px;border:1px solid #ddd"><?php echo htmlspecialchars($res); ?></th>
+              <?php endforeach; ?>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($departments as $d): ?>
+              <tr>
+                <td style="padding:8px;border:1px solid #ddd;white-space:nowrap"><?php echo htmlspecialchars($d['name']); ?></td>
+                <?php foreach ($resources as $res): 
+                  $p = $perms[$d['id']][$res] ?? ['can_view'=>1,'can_edit'=>0,'can_delete'=>0,'can_operate'=>0];
+                ?>
+                  <td style="padding:8px;border:1px solid #ddd">
+                    <label style="display:inline-block;margin-right:6px"><input type="checkbox" name="perm[<?php echo $d['id']; ?>][<?php echo $res; ?>][view]" <?php echo $p['can_view']?'checked':''; ?>> Ver</label>
+                    <label style="display:inline-block;margin-right:6px"><input type="checkbox" name="perm[<?php echo $d['id']; ?>][<?php echo $res; ?>][edit]" <?php echo $p['can_edit']?'checked':''; ?>> Editar</label>
+                    <label style="display:inline-block;margin-right:6px"><input type="checkbox" name="perm[<?php echo $d['id']; ?>][<?php echo $res; ?>][delete]" <?php echo $p['can_delete']?'checked':''; ?>> Remover</label>
+                    <label style="display:inline-block"><input type="checkbox" name="perm[<?php echo $d['id']; ?>][<?php echo $res; ?>][operate]" <?php echo $p['can_operate']?'checked':''; ?>> Operar</label>
+                  </td>
+                <?php endforeach; ?>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+      <div class="form-row" style="margin-top:12px">
+        <button type="submit" name="save_dept_permissions" value="1" class="btn">Guardar Permissões</button>
+      </div>
+    </form>
+  <?php endif; ?>
+  
+  <!-- TAB: PERMISSÕES DO CLIENTE -->
+  <?php if ($activeTab === 'cliente'): ?>
+    <?php 
+      $clientPermsKeys = ['view_invoices','pay_invoices','open_tickets','manage_domains','view_services','edit_profile'];
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_client_permissions'])) {
+        foreach ($clientPermsKeys as $k) {
+          $allowed = isset($_POST['client_perm'][$k]) ? 1 : 0;
+          $stmt = $pdo->prepare('INSERT INTO client_permissions (permission_key, allowed) VALUES (?, ?) ON DUPLICATE KEY UPDATE allowed = VALUES(allowed)');
+          $stmt->execute([$k, $allowed]);
+        }
+        echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Permissões dos clientes atualizadas.</div>';
+      }
+      $rows = $pdo->query('SELECT * FROM client_permissions')->fetchAll();
+      $permMap = [];
+      foreach ($rows as $r) $permMap[$r['permission_key']] = (int)$r['allowed'];
+    ?>
+    <form method="post">
+      <?php echo csrf_input(); ?>
+      <h3>Permissões dos Clientes</h3>
+      <div class="form-row">
+        <?php foreach ($clientPermsKeys as $k): ?>
+          <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[<?php echo $k; ?>]" <?php echo !empty($permMap[$k])?'checked':''; ?>> <?php echo htmlspecialchars(str_replace('_',' ', ucfirst($k))); ?></label>
+        <?php endforeach; ?>
+      </div>
+      <div class="form-row" style="margin-top:12px">
+        <button type="submit" name="save_client_permissions" value="1" class="btn">Guardar Permissões</button>
+      </div>
+    </form>
+  <?php endif; ?>
+  
+  <!-- TAB: EMPRESA -->
+  <?php if ($activeTab === 'empresa'): ?>
+    <?php 
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_company'])) {
+        $errors = [];
+        $fields = ['company_name','company_address','company_phone','company_email','company_website','company_nif'];
+        foreach ($fields as $f) {
+          setSetting($pdo, $f, trim($_POST[$f] ?? ''));
+        }
+        // Upload logo da empresa
+        if (!empty($_FILES['company_logo']) && $_FILES['company_logo']['error'] === UPLOAD_ERR_OK) {
+          $logoErrors = validateImageUpload($_FILES['company_logo'], 3000, ['jpg','jpeg','png']);
+          if (empty($logoErrors)) {
+            $old = getSetting($pdo, 'company_logo');
+            $new = saveUploadedFile($_FILES['company_logo']);
+            if ($new) {
+              setSetting($pdo, 'company_logo', $new);
+              deleteOldFile($old);
+            }
+          } else {
+            $errors = array_merge($errors, $logoErrors);
+          }
+        }
+        if (!empty($errors)) {
+          echo '<div style="background:#ffebee;color:#c62828;padding:12px;border-radius:4px;margin-bottom:16px">'
+             . htmlspecialchars(implode(' ', $errors)) . '</div>';
+        } else {
+          echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Dados da empresa guardados.</div>';
+        }
+      }
+      $company = [
+        'company_name' => getSetting($pdo, 'company_name'),
+        'company_address' => getSetting($pdo, 'company_address'),
+        'company_phone' => getSetting($pdo, 'company_phone'),
+        'company_email' => getSetting($pdo, 'company_email'),
+        'company_website' => getSetting($pdo, 'company_website'),
+        'company_nif' => getSetting($pdo, 'company_nif'),
+        'company_logo' => getSetting($pdo, 'company_logo'),
+      ];
+      $companyLogoUrl = getAssetUrl($company['company_logo']);
+      $companyLogoPath = getAssetPath($company['company_logo']);
+    ?>
+    <form method="post" enctype="multipart/form-data">
+      <?php echo csrf_input(); ?>
+      <div class="form-row"><label>Nome da Empresa</label><input type="text" name="company_name" value="<?php echo htmlspecialchars($company['company_name']); ?>" required></div>
+      <div class="form-row"><label>Morada</label><input type="text" name="company_address" value="<?php echo htmlspecialchars($company['company_address']); ?>"></div>
+      <div class="form-row"><label>Telefone/Telemóvel</label><input type="text" name="company_phone" value="<?php echo htmlspecialchars($company['company_phone']); ?>"></div>
+      <div class="form-row"><label>Email</label><input type="email" name="company_email" value="<?php echo htmlspecialchars($company['company_email']); ?>"></div>
+      <div class="form-row"><label>Website</label><input type="url" name="company_website" value="<?php echo htmlspecialchars($company['company_website']); ?>"></div>
+      <div class="form-row"><label>NIF</label><input type="text" name="company_nif" value="<?php echo htmlspecialchars($company['company_nif']); ?>"></div>
+      <?php if ($company['company_logo'] && file_exists($companyLogoPath)): ?>
+        <div style="margin-bottom:12px">
+          <img src="<?php echo htmlspecialchars($companyLogoUrl); ?>?v=<?php echo time(); ?>" alt="Logo Empresa" style="max-width:180px;border:1px solid #ddd;padding:4px;border-radius:4px">
+          <p class="small" style="margin:8px 0 0 0">Ficheiro atual: <?php echo htmlspecialchars(basename($company['company_logo'])); ?></p>
+        </div>
+      <?php endif; ?>
+      <div class="form-row"><label>Logo da Empresa</label><input type="file" name="company_logo" accept="image/jpeg,image/png"></div>
+      <div class="form-row" style="margin-top:12px"><button type="submit" name="save_company" value="1" class="btn">Guardar Dados da Empresa</button></div>
+    </form>
+  <?php endif; ?>
+  
+  <!-- TAB: CATEGORIAS DE SERVIÇOS -->
+  <?php if ($activeTab === 'categorias'): ?>
+    <?php 
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_category'])) {
+        $name = trim($_POST['category_name'] ?? '');
+        if ($name !== '') {
+          $stmt = $pdo->prepare('INSERT IGNORE INTO service_categories (name, active) VALUES (?, 1)');
+          $stmt->execute([$name]);
+          echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Categoria criada.</div>';
+        }
+      }
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_category'])) {
+        $id = intval($_POST['category_id'] ?? 0);
+        $newActive = intval($_POST['new_active'] ?? 1);
+        if ($id > 0) {
+          $pdo->prepare('UPDATE service_categories SET active = ? WHERE id = ?')->execute([$newActive, $id]);
+        }
+      }
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_category'])) {
+        $id = intval($_POST['category_id'] ?? 0);
+        if ($id > 0) {
+          $pdo->prepare('DELETE FROM service_categories WHERE id = ?')->execute([$id]);
+        }
+      }
+      $cats = $pdo->query('SELECT * FROM service_categories ORDER BY name')->fetchAll();
+    ?>
+    <form method="post">
+      <?php echo csrf_input(); ?>
+      <h3>Categorias de Serviços</h3>
+      <div class="form-row">
+        <label>Nova categoria</label>
+        <div style="display:flex;gap:8px;width:100%;align-items:center">
+          <input type="text" name="category_name" placeholder="Nome da Categoria" style="flex:1" required>
+          <button type="submit" name="add_category" value="1" class="btn">Adicionar</button>
+        </div>
+      </div>
+    </form>
+    <div style="margin-top:16px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:#f7f7f7"><th style="padding:8px;border:1px solid #ddd">Categoria</th><th style="padding:8px;border:1px solid #ddd">Estado</th><th style="padding:8px;border:1px solid #ddd">Ações</th></tr>
+        </thead>
+        <tbody>
+          <?php foreach ($cats as $c): ?>
+            <tr>
+              <td style="padding:8px;border:1px solid #ddd"><?php echo htmlspecialchars($c['name']); ?></td>
+              <td style="padding:8px;border:1px solid #ddd"><?php echo $c['active']?'Ativa':'Inativa'; ?></td>
+              <td style="padding:8px;border:1px solid #ddd">
+                <form method="post" style="display:inline-block;margin-right:6px">
+                  <?php echo csrf_input(); ?>
+                  <input type="hidden" name="category_id" value="<?php echo (int)$c['id']; ?>">
+                  <input type="hidden" name="new_active" value="<?php echo $c['active']?0:1; ?>">
+                  <button type="submit" name="toggle_category" value="1" class="btn" style="background:#1976d2">
+                    <?php echo $c['active'] ? 'Desativar' : 'Ativar'; ?>
+                  </button>
+                </form>
+                <form method="post" style="display:inline-block" onsubmit="return confirm('Eliminar esta categoria?');">
+                  <?php echo csrf_input(); ?>
+                  <input type="hidden" name="category_id" value="<?php echo (int)$c['id']; ?>">
+                  <button type="submit" name="delete_category" value="1" class="btn" style="background:#c62828">Remover</button>
+                </form>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
+  
+  <!-- TAB: IMPOSTOS -->
+  <?php if ($activeTab === 'impostos'): ?>
+    <?php 
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_tax'])) {
+        $name = trim($_POST['tax_name'] ?? '');
+        $rate = trim($_POST['tax_rate'] ?? '');
+        if ($name !== '' && is_numeric($rate)) {
+          $stmt = $pdo->prepare('INSERT INTO taxes (name, rate, active) VALUES (?, ?, 1)');
+          $stmt->execute([$name, $rate]);
+          echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Imposto adicionado.</div>';
+        }
+      }
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_tax'])) {
+        $id = intval($_POST['tax_id'] ?? 0);
+        $newActive = intval($_POST['new_active'] ?? 1);
+        if ($id > 0) {
+          $pdo->prepare('UPDATE taxes SET active = ? WHERE id = ?')->execute([$newActive, $id]);
+        }
+      }
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_tax'])) {
+        $id = intval($_POST['tax_id'] ?? 0);
+        if ($id > 0) {
+          $pdo->prepare('DELETE FROM taxes WHERE id = ?')->execute([$id]);
+        }
+      }
+      $taxes = $pdo->query('SELECT * FROM taxes ORDER BY name')->fetchAll();
+    ?>
+    <form method="post">
+      <?php echo csrf_input(); ?>
+      <h3>Impostos</h3>
+      <div class="form-row">
+        <label>Nome do imposto</label>
+        <input type="text" name="tax_name" placeholder="Ex.: IVA PT" required>
+      </div>
+      <div class="form-row">
+        <label>Taxa (%)</label>
+        <input type="number" step="0.01" min="0" max="100" name="tax_rate" placeholder="Ex.: 23" required>
+      </div>
+      <div class="form-row" style="margin-top:12px">
+        <button type="submit" name="add_tax" value="1" class="btn">Adicionar Imposto</button>
+      </div>
+    </form>
+    <div style="margin-top:16px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:#f7f7f7"><th style="padding:8px;border:1px solid #ddd">Imposto</th><th style="padding:8px;border:1px solid #ddd">Taxa (%)</th><th style="padding:8px;border:1px solid #ddd">Estado</th><th style="padding:8px;border:1px solid #ddd">Ações</th></tr>
+        </thead>
+        <tbody>
+          <?php foreach ($taxes as $t): ?>
+            <tr>
+              <td style="padding:8px;border:1px solid #ddd"><?php echo htmlspecialchars($t['name']); ?></td>
+              <td style="padding:8px;border:1px solid #ddd"><?php echo htmlspecialchars($t['rate']); ?></td>
+              <td style="padding:8px;border:1px solid #ddd"><?php echo $t['active']?'Ativo':'Inativo'; ?></td>
+              <td style="padding:8px;border:1px solid #ddd">
+                <form method="post" style="display:inline-block;margin-right:6px">
+                  <?php echo csrf_input(); ?>
+                  <input type="hidden" name="tax_id" value="<?php echo (int)$t['id']; ?>">
+                  <input type="hidden" name="new_active" value="<?php echo $t['active']?0:1; ?>">
+                  <button type="submit" name="toggle_tax" value="1" class="btn" style="background:#1976d2">
+                    <?php echo $t['active'] ? 'Desativar' : 'Ativar'; ?>
+                  </button>
+                </form>
+                <form method="post" style="display:inline-block" onsubmit="return confirm('Eliminar este imposto?');">
+                  <?php echo csrf_input(); ?>
+                  <input type="hidden" name="tax_id" value="<?php echo (int)$t['id']; ?>">
+                  <button type="submit" name="delete_tax" value="1" class="btn" style="background:#c62828">Remover</button>
+                </form>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
+  
+  <!-- TAB: MÉTODOS DE PAGAMENTO -->
+  <?php if ($activeTab === 'pagamentos'): ?>
+    <?php 
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_method'])) {
+        $name = trim($_POST['method_name'] ?? '');
+        $gateway = trim($_POST['method_gateway'] ?? '');
+        if ($name !== '') {
+          $stmt = $pdo->prepare('INSERT INTO payment_methods (name, gateway, active) VALUES (?, ?, 1)');
+          $stmt->execute([$name, $gateway]);
+          echo '<div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">✓ Método de pagamento adicionado.</div>';
+        }
+      }
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_method'])) {
+        $id = intval($_POST['method_id'] ?? 0);
+        $newActive = intval($_POST['new_active'] ?? 1);
+        if ($id > 0) {
+          $pdo->prepare('UPDATE payment_methods SET active = ? WHERE id = ?')->execute([$newActive, $id]);
+        }
+      }
+      if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_method'])) {
+        $id = intval($_POST['method_id'] ?? 0);
+        if ($id > 0) {
+          $pdo->prepare('DELETE FROM payment_methods WHERE id = ?')->execute([$id]);
+        }
+      }
+      $methods = $pdo->query('SELECT * FROM payment_methods ORDER BY name')->fetchAll();
+    ?>
+    <form method="post">
+      <?php echo csrf_input(); ?>
+      <h3>Métodos de Pagamento</h3>
+      <div class="form-row"><label>Nome</label><input type="text" name="method_name" placeholder="Ex.: MB Way" required></div>
+      <div class="form-row"><label>Gateway</label><input type="text" name="method_gateway" placeholder="Ex.: ifthenpay"></div>
+      <div class="form-row" style="margin-top:12px"><button type="submit" name="add_method" value="1" class="btn">Adicionar Método</button></div>
+    </form>
+    <div style="margin-top:16px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f7f7f7"><th style="padding:8px;border:1px solid #ddd">Método</th><th style="padding:8px;border:1px solid #ddd">Gateway</th><th style="padding:8px;border:1px solid #ddd">Estado</th></tr></thead>
+        <tbody>
+          <?php foreach ($methods as $m): ?>
+            <tr>
+              <td style="padding:8px;border:1px solid #ddd"><?php echo htmlspecialchars($m['name']); ?></td>
+              <td style="padding:8px;border:1px solid #ddd"><?php echo htmlspecialchars($m['gateway']); ?></td>
+              <td style="padding:8px;border:1px solid #ddd"><?php echo $m['active']?'Ativo':'Inativo'; ?></td>
+              <td style="padding:8px;border:1px solid #ddd">
+                <form method="post" style="display:inline-block;margin-right:6px">
+                  <?php echo csrf_input(); ?>
+                  <input type="hidden" name="method_id" value="<?php echo (int)$m['id']; ?>">
+                  <input type="hidden" name="new_active" value="<?php echo $m['active']?0:1; ?>">
+                  <button type="submit" name="toggle_method" value="1" class="btn" style="background:#1976d2">
+                    <?php echo $m['active'] ? 'Desativar' : 'Ativar'; ?>
+                  </button>
+                </form>
+                <form method="post" style="display:inline-block" onsubmit="return confirm('Eliminar este método?');">
+                  <?php echo csrf_input(); ?>
+                  <input type="hidden" name="method_id" value="<?php echo (int)$m['id']; ?>">
+                  <button type="submit" name="delete_method" value="1" class="btn" style="background:#c62828">Remover</button>
+                </form>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
     </div>
   <?php endif; ?>
   

@@ -1,16 +1,7 @@
 <?php
+// Página descontinuada: redirecionar para Configurações > Equipa
 require_once __DIR__ . '/../inc/auth.php';
 requireLogin();
-$user = currentUser();
-if (!in_array($user['role'], ['Gestor','Suporte ao Cliente','Suporte Técnica','Suporte Financeira'])) {
-    http_response_code(403);
-    echo 'Acesso negado.';
-    exit;
-}
+header('Location: /admin/settings.php?tab=equipa', true, 302);
+exit;
 ?>
-<?php include __DIR__ . '/../inc/header.php'; ?>
-<div class="card">
-  <h2>Página em Desenvolvimento</h2>
-  <p>Esta página está em desenvolvimento.</p>
-</div>
-<?php include __DIR__ . '/../inc/footer.php'; ?>

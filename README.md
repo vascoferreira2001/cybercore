@@ -55,7 +55,7 @@ define('DB_PASS', 'sua-password');
 | `domains.php` | Gestão de domínios |
 | `finance.php` | Aviso de pagamentos / Financeiro |
 | `logs.php` | Histórico de atividades |
-| `manage_users.php` | Gestão de utilizadores (Gestor) |
+| `manage_users.php` | Descontinuado (redirige para Configurações > Equipa) |
 
 ## Permissões por Role
 
@@ -83,7 +83,7 @@ define('DB_PASS', 'sua-password');
 
 ### Gestor
 - Acesso total a todas as funcionalidades
-- Gestão de utilizadores (alterar roles, ver detalhes)
+- Gestão de utilizadores descontinuada — usar Configurações > Equipa e Funções
 - Não pode remover seu próprio role Gestor
 
 ## Segurança
@@ -162,7 +162,7 @@ Cria utilizadores de teste com password `Password123!`:
 ├── domains_edit.php
 ├── finance.php
 ├── logs.php
-├── manage_users.php
+├── manage_users.php (descontinuado)
 ├── forgot_password.php
 ├── reset_password.php
 ├── logout.php

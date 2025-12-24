@@ -159,7 +159,6 @@ try {
           </a>
           <div id="settings-submenu" class="submenu">
             <a href="/admin/settings.php" class="nav-item-sub">Definições Gerais</a>
-            <a href="/admin/manage_users.php" class="nav-item-sub">Gestão de Utilizadores</a>
             <a href="/admin/system-logs.php" class="nav-item-sub">Logs do Sistema</a>
           </div>
         </div>
