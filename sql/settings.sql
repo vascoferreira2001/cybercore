@@ -61,12 +61,12 @@ INSERT IGNORE INTO departments (name, active) VALUES
 CREATE TABLE IF NOT EXISTS department_permissions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   department_id INT NOT NULL,
-  resource VARCHAR(100) NOT NULL,
-  can_view TINYINT(1) DEFAULT 1,
-  can_edit TINYINT(1) DEFAULT 0,
-  can_delete TINYINT(1) DEFAULT 0,
-  can_operate TINYINT(1) DEFAULT 0,
-  UNIQUE KEY dept_resource (department_id, resource),
+  permission_key VARCHAR(150) NOT NULL,
+  permission_value LONGTEXT,
+  permission_scope JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY dept_permission (department_id, permission_key),
   FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
 );
 

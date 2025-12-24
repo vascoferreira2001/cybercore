@@ -86,12 +86,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 
-  // === FUNÇÕES: Permissões por departamento ===
+  // === FUNÇÕES: Permissões Hierárquicas por departamento ===
+  if (isset($_POST['save_hierarchical_permissions'])) {
+    foreach ($_POST['perm'] ?? [] as $deptId => $perms) {
+      foreach ($perms as $key => $value) {
+        $deptId = intval($deptId);
+        if ($deptId <= 0) continue;
+        
+        // Suportar checkboxes (sim/não) e radio buttons (múltiplas opções)
+        if (is_array($value)) {
+          // Se for array, provavelmente é um checkbox selecionado
+          $permValue = 'sim';
+        } else {
+          $permValue = trim($value);
+        }
+        
+        // Inserir ou atualizar a permissão
+        $stmt = $pdo->prepare('INSERT INTO department_permissions (department_id, permission_key, permission_value, permission_scope) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE permission_value=VALUES(permission_value), permission_scope=VALUES(permission_scope)');
+        $stmt->execute([$deptId, $key, $permValue, '[]']);
+      }
+    }
+    header('Location: settings.php?tab=funcoes&success=1');
+    exit;
+  }
+
+  // === PERMISSÕES (compatibilidade com antiga) ===
   if (isset($_POST['save_dept_permissions'])) {
     foreach ($_POST['perm'] ?? [] as $deptId => $byRes) {
       foreach ($byRes as $res => $flags) {
-        $stmt = $pdo->prepare('INSERT INTO department_permissions (department_id, resource, can_view, can_edit, can_delete, can_operate) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE can_view=VALUES(can_view), can_edit=VALUES(can_edit), can_delete=VALUES(can_delete), can_operate=VALUES(can_operate)');
-        $stmt->execute([$deptId, $res, isset($flags['view'])?1:0, isset($flags['edit'])?1:0, isset($flags['delete'])?1:0, isset($flags['operate'])?1:0]);
+        $stmt = $pdo->prepare('INSERT INTO department_permissions (department_id, permission_key, permission_value, permission_scope) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE permission_value=VALUES(permission_value), permission_scope=VALUES(permission_scope)');
+        $permValue = json_encode(['can_view'=>isset($flags['view'])?1:0, 'can_edit'=>isset($flags['edit'])?1:0, 'can_delete'=>isset($flags['delete'])?1:0, 'can_operate'=>isset($flags['operate'])?1:0]);
+        $stmt->execute([$deptId, $res, $permValue, '[]']);
       }
     }
     header('Location: settings.php?tab=funcoes&success=1');
@@ -703,52 +728,266 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     </div>
   <?php endif; ?>
   
-  <!-- TAB: FUNÇÕES DA EQUIPA (Permissões por departamento) -->
+  <!-- TAB: FUNÇÕES DA EQUIPA (Permissões Hierárquicas) -->
   <?php if ($activeTab === 'funcoes'): ?>
     <?php 
       $departments = $pdo->query('SELECT * FROM departments ORDER BY name')->fetchAll();
-      $resources = ['dashboard','tickets','customers','services','finance','settings','reports'];
-      // Carregar permissões atuais
-      $perms = [];
-      $rows = $pdo->query('SELECT * FROM department_permissions')->fetchAll();
-      foreach ($rows as $r) {
-        $perms[$r['department_id']][$r['resource']] = $r;
+      
+      // Função auxiliar para carregar permissão
+      function getDeptPermission($pdo, $deptId, $key) {
+        $r = $pdo->prepare('SELECT permission_value, permission_scope FROM department_permissions WHERE department_id=? AND permission_key=?');
+        $r->execute([$deptId, $key]);
+        $row = $r->fetch();
+        return $row ? ['value'=>$row['permission_value'], 'scope'=>json_decode($row['permission_scope']??'[]', true)] : ['value'=>'', 'scope'=>[]];
       }
     ?>
     <form method="post">
       <?php echo csrf_input(); ?>
       <h3>Permissões por Departamento</h3>
-      <div style="overflow:auto">
-        <table style="width:100%;border-collapse:collapse">
-          <thead>
-            <tr style="background:#f7f7f7">
-              <th style="padding:8px;border:1px solid #ddd">Departamento</th>
-              <?php foreach ($resources as $res): ?>
-                <th style="padding:8px;border:1px solid #ddd"><?php echo htmlspecialchars($res); ?></th>
-              <?php endforeach; ?>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($departments as $d): ?>
-              <tr>
-                <td style="padding:8px;border:1px solid #ddd;white-space:nowrap"><?php echo htmlspecialchars($d['name']); ?></td>
-                <?php foreach ($resources as $res): 
-                  $p = $perms[$d['id']][$res] ?? ['can_view'=>1,'can_edit'=>0,'can_delete'=>0,'can_operate'=>0];
+      <p class="small" style="margin-bottom:16px">Configure as permissões detalhadas para cada departamento.</p>
+      
+      <?php foreach ($departments as $d): ?>
+        <div style="margin-bottom:24px;padding:16px;background:#f9f9f9;border-radius:4px;border-left:4px solid #1976d2">
+          <h4 style="margin-top:0"><?php echo htmlspecialchars($d['name']); ?></h4>
+          
+          <!-- Permissões de Administração -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Permissões de Administração</h5>
+            <?php 
+              $adminPerms = ['admin_settings', 'admin_add_members', 'admin_enable_members', 'admin_delete_members'];
+              foreach ($adminPerms as $ap):
+                $p = getDeptPermission($pdo, $d['id'], $ap);
+                $checked = $p['value'] === 'sim' ? 'checked' : '';
+            ?>
+              <label style="display:block;margin-bottom:8px"><input type="checkbox" name="perm[<?php echo $d['id']; ?>][<?php echo $ap; ?>]" value="sim" <?php echo $checked; ?>> 
+                <?php 
+                  $labels = [
+                    'admin_settings' => 'Pode gerir todos os tipos de configurações',
+                    'admin_add_members' => 'Pode adicionar / convidar novos membros para a equipa',
+                    'admin_enable_members' => 'Pode ativar ou desativar membros da equipa',
+                    'admin_delete_members' => 'Pode excluir membros da equipa'
+                  ];
+                  echo htmlspecialchars($labels[$ap] ?? $ap);
                 ?>
-                  <td style="padding:8px;border:1px solid #ddd">
-                    <label style="display:inline-block;margin-right:6px"><input type="checkbox" name="perm[<?php echo $d['id']; ?>][<?php echo $res; ?>][view]" <?php echo $p['can_view']?'checked':''; ?>> Ver</label>
-                    <label style="display:inline-block;margin-right:6px"><input type="checkbox" name="perm[<?php echo $d['id']; ?>][<?php echo $res; ?>][edit]" <?php echo $p['can_edit']?'checked':''; ?>> Editar</label>
-                    <label style="display:inline-block;margin-right:6px"><input type="checkbox" name="perm[<?php echo $d['id']; ?>][<?php echo $res; ?>][delete]" <?php echo $p['can_delete']?'checked':''; ?>> Remover</label>
-                    <label style="display:inline-block"><input type="checkbox" name="perm[<?php echo $d['id']; ?>][<?php echo $res; ?>][operate]" <?php echo $p['can_operate']?'checked':''; ?>> Operar</label>
-                  </td>
-                <?php endforeach; ?>
-              </tr>
+              </label>
             <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-      <div class="form-row" style="margin-top:12px">
-        <button type="submit" name="save_dept_permissions" value="1" class="btn">Guardar Permissões</button>
+          </div>
+          
+          <!-- Definir permissões de membros da equipa -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Definir Permissões de Membros da Equipa</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'members_visibility');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][members_visibility]" value="hide_list" <?php echo $val==='hide_list'?'checked':''; ?>> Esconder a lista de membros da equipa</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][members_visibility]" value="hide_dropdowns" <?php echo $val==='hide_dropdowns'?'checked':''; ?>> Ocultar a lista de membros nos menus suspensos</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][members_visibility]" value="" <?php echo empty($val)?'checked':''; ?>> Mostrar tudo</label>
+            
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee">
+              <?php 
+                $perm2 = getDeptPermission($pdo, $d['id'], 'members_contact');
+                $val2 = $perm2['value'];
+              ?>
+              <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][members_contact]" value="no" <?php echo $val2==='no'?'checked':''; ?>> Não pode ver dados de contacto</label>
+              <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][members_contact]" value="yes" <?php echo $val2==='yes'?'checked':''; ?>> Pode ver os dados de contacto dos membros</label>
+            </div>
+            
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee">
+              <?php 
+                $perm3 = getDeptPermission($pdo, $d['id'], 'members_social');
+                $val3 = $perm3['value'];
+              ?>
+              <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][members_social]" value="no" <?php echo $val3==='no'?'checked':''; ?>> Não pode ver links de redes sociais</label>
+              <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][members_social]" value="yes" <?php echo $val3==='yes'?'checked':''; ?>> Pode ver os links de redes sociais</label>
+            </div>
+            
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee">
+              <?php 
+                $perm4 = getDeptPermission($pdo, $d['id'], 'members_update');
+                $val4 = $perm4['value'];
+              ?>
+              <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][members_update]" value="no" <?php echo $val4==='no'?'checked':''; ?>> Não</label>
+              <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][members_update]" value="all" <?php echo $val4==='all'?'checked':''; ?>> Sim, de todos os membros</label>
+              <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][members_update]" value="specific" <?php echo $val4==='specific'?'checked':''; ?>> Sim, de membros ou equipas específicas</label>
+            </div>
+            
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee">
+              <?php 
+                $perm5 = getDeptPermission($pdo, $d['id'], 'members_notes');
+                $checked5 = $perm5['value'] === 'sim' ? 'checked' : '';
+              ?>
+              <label><input type="checkbox" name="perm[<?php echo $d['id']; ?>][members_notes]" value="sim" <?php echo $checked5; ?>> Pode gerenciar as notas dos membros da equipa</label>
+            </div>
+          </div>
+          
+          <!-- Permissões de Mensagem -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Definir Permissões de Mensagem</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'messaging');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][messaging]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não é possível enviar qualquer mensagem</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][messaging]" value="all" <?php echo $val==='all'?'checked':''; ?>> Pode enviar mensagens para todos</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][messaging]" value="specific" <?php echo $val==='specific'?'checked':''; ?>> Pode enviar mensagens para membros ou equipes específicas</label>
+          </div>
+          
+          <!-- Licenças -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Pode gerir Licenças de Membros da Equipa</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'licenses');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][licenses]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][licenses]" value="all" <?php echo $val==='all'?'checked':''; ?>> Sim, de todos os membros</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][licenses]" value="specific" <?php echo $val==='specific'?'checked':''; ?>> Sim, de membros ou equipas específicas (menos o seu próprio)</label>
+            <div style="margin-top:8px;padding-left:20px">
+              <?php 
+                $perm2 = getDeptPermission($pdo, $d['id'], 'licenses_delete');
+                $checked2 = $perm2['value'] === 'sim' ? 'checked' : '';
+              ?>
+              <label><input type="checkbox" name="perm[<?php echo $d['id']; ?>][licenses_delete]" value="sim" <?php echo $checked2; ?>> Pode eliminar pedidos de licença</label>
+            </div>
+          </div>
+          
+          <!-- Horário de Trabalho -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Pode gerir o Painel de Horário de Trabalho da Equipa</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'work_schedule');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][work_schedule]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][work_schedule]" value="all" <?php echo $val==='all'?'checked':''; ?>> Sim, de todos os membros</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][work_schedule]" value="specific" <?php echo $val==='specific'?'checked':''; ?>> Sim, de membros ou equipas específicas</label>
+          </div>
+          
+          <!-- Acesso a Clientes -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Pode Aceder às Informações dos Clientes</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'customers');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][customers]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][customers]" value="all" <?php echo $val==='all'?'checked':''; ?>> Sim, todos os clientes</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][customers]" value="own" <?php echo $val==='own'?'checked':''; ?>> Sim, apenas clientes próprios</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][customers]" value="readonly" <?php echo $val==='readonly'?'checked':''; ?>> Somente leitura</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][customers]" value="specific" <?php echo $val==='specific'?'checked':''; ?>> Sim, grupos de clientes específicos</label>
+          </div>
+          
+          <!-- Acesso a Tickets -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Pode Aceder a Tickets</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'tickets');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][tickets]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][tickets]" value="all" <?php echo $val==='all'?'checked':''; ?>> Sim, todos os chamados</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][tickets]" value="assigned" <?php echo $val==='assigned'?'checked':''; ?>> Sim, apenas tíquetes atribuídos</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][tickets]" value="categories" <?php echo $val==='categories'?'checked':''; ?>> Sim, categorias específicas</label>
+          </div>
+          
+          <!-- Ajuda e Banco de Conhecimentos -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Pode gerir as Secções Ajuda e Banco de Conhecimentos</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'knowledge_base');
+              $checked = $perm['value'] === 'sim' ? 'checked' : '';
+            ?>
+            <label><input type="checkbox" name="perm[<?php echo $d['id']; ?>][knowledge_base]" value="sim" <?php echo $checked; ?>> Sim</label>
+          </div>
+          
+          <!-- Avisos de Pagamento -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Definir Permissões do Aviso de Pagamento</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'payment_warnings');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][payment_warnings]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não consigo acessar aos Avisos de Pagamento</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][payment_warnings]" value="manage_all" <?php echo $val==='manage_all'?'checked':''; ?>> Pode gerenciar todos os Avisos de Pagamento</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][payment_warnings]" value="view_all" <?php echo $val==='view_all'?'checked':''; ?>> Pode visualizar todos os Avisos de Pagamento</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][payment_warnings]" value="manage_own_clients" <?php echo $val==='manage_own_clients'?'checked':''; ?>> Pode gerenciar dos próprios clientes</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][payment_warnings]" value="manage_own_clients_no_delete" <?php echo $val==='manage_own_clients_no_delete'?'checked':''; ?>> Pode gerenciar dos próprios clientes (exceto excluir)</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][payment_warnings]" value="view_own_clients" <?php echo $val==='view_own_clients'?'checked':''; ?>> Pode visualizar dos próprios clientes</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][payment_warnings]" value="manage_created" <?php echo $val==='manage_created'?'checked':''; ?>> Pode gerenciar apenas criados por você</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][payment_warnings]" value="manage_created_no_delete" <?php echo $val==='manage_created_no_delete'?'checked':''; ?>> Pode gerenciar apenas criados por você (exceto excluir)</label>
+          </div>
+          
+          <!-- Orçamentos -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Pode Aceder aos Orçamentos</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'quotes');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][quotes]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não consigo acessar os orçamentos</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][quotes]" value="manage_all" <?php echo $val==='manage_all'?'checked':''; ?>> Capaz de gerenciar todos os orçamentos</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][quotes]" value="view_all" <?php echo $val==='view_all'?'checked':''; ?>> É possível visualizar todos os orçamentos</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][quotes]" value="manage_created" <?php echo $val==='manage_created'?'checked':''; ?>> Só é possível gerenciar orçamentos criados por mim</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][quotes]" value="manage_own_clients" <?php echo $val==='manage_own_clients'?'checked':''; ?>> Capaz de gerenciar orçamentos de seus próprios clientes</label>
+          </div>
+          
+          <!-- Contratos -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Pode Acessar os Contratos</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'contracts');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][contracts]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não consigo acessar os contratos</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][contracts]" value="manage_all" <?php echo $val==='manage_all'?'checked':''; ?>> Pode gerenciar todos os contratos</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][contracts]" value="manage_own_clients" <?php echo $val==='manage_own_clients'?'checked':''; ?>> Pode gerenciar apenas contratos de clientes próprios</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][contracts]" value="view_own_clients" <?php echo $val==='view_own_clients'?'checked':''; ?>> Só pode ver os contratos do próprio cliente</label>
+          </div>
+          
+          <!-- Propostas -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Pode Acessar Propostas</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'proposals');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][proposals]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não consigo acessar as propostas</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][proposals]" value="manage_all" <?php echo $val==='manage_all'?'checked':''; ?>> Capaz de gerenciar todas as propostas</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][proposals]" value="view_all" <?php echo $val==='view_all'?'checked':''; ?>> É possível visualizar todas as propostas</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][proposals]" value="manage_created" <?php echo $val==='manage_created'?'checked':''; ?>> Só pode gerir propostas criadas por si</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][proposals]" value="manage_own_clients" <?php echo $val==='manage_own_clients'?'checked':''; ?>> Capaz de gerenciar propostas de clientes próprios</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][proposals]" value="view_own_clients" <?php echo $val==='view_own_clients'?'checked':''; ?>> É possível visualizar as propostas dos próprios clientes</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][proposals]" value="manage_prospects" <?php echo $val==='manage_prospects'?'checked':''; ?>> Capaz de gerenciar propostas de clientes em potencial</label>
+          </div>
+          
+          <!-- Despesas -->
+          <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd">
+            <h5>Pode Aceder a Despesas</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'expenses');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][expenses]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][expenses]" value="all" <?php echo $val==='all'?'checked':''; ?>> Sim, todas as despesas</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][expenses]" value="own" <?php echo $val==='own'?'checked':''; ?>> Pode gerenciar apenas despesas criadas por ele mesmo</label>
+          </div>
+          
+          <!-- Avisos -->
+          <div style="margin-bottom:20px">
+            <h5>Pode Gerir Avisos</h5>
+            <?php 
+              $perm = getDeptPermission($pdo, $d['id'], 'alerts');
+              $val = $perm['value'];
+            ?>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][alerts]" value="no" <?php echo $val==='no'?'checked':''; ?>> Não</label>
+            <label style="display:block;margin-bottom:6px"><input type="radio" name="perm[<?php echo $d['id']; ?>][alerts]" value="yes" <?php echo $val==='yes'?'checked':''; ?>> Sim</label>
+          </div>
+        </div>
+      <?php endforeach; ?>
+      
+      <div class="form-row" style="margin-top:20px">
+        <button type="submit" name="save_hierarchical_permissions" value="1" class="btn">Guardar Permissões Hierárquicas</button>
       </div>
     </form>
   <?php endif; ?>
