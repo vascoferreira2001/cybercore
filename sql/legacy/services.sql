@@ -1,3 +1,8 @@
+-- ⚠️ NÃO IMPORTAR DIRETAMENTE - FICHEIRO LEGACY ⚠️
+-- Este ficheiro é apenas para referência.
+-- Use sql/schema.sql para instalação limpa.
+-- Importar este ficheiro causará erro #1005 (foreign key inválida).
+
 -- Legacy: moved into consolidated schema.sql
 USE cybercore;
 

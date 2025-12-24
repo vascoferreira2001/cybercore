@@ -112,11 +112,19 @@ define('DB_PASS', 'sua-password');
 
 ### Instalação / Migração
 
-Instalação de raiz (recomendado):
+⚠️ **IMPORTANTE**: Use APENAS `sql/schema.sql`. Não importe ficheiros de `sql/legacy/`.
+
+Instalação de raiz:
 
 ```bash
+# 1. Remover base existente (se necessário)
+mysql -u USER -p -e "DROP DATABASE IF EXISTS cybercore;"
+
+# 2. Importar schema completo
 mysql -u USER -p < sql/schema.sql
 ```
+
+Ver instruções detalhadas: [INSTALL.md](INSTALL.md)
 
 Migração local (dev, opcional):
 

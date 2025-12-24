@@ -1,3 +1,7 @@
+-- ⚠️ NÃO IMPORTAR DIRETAMENTE - FICHEIRO LEGACY ⚠️
+-- Este ficheiro é apenas para referência.
+-- Use sql/schema.sql para instalação limpa.
+
 -- Legacy: moved into consolidated schema.sql
 USE cybercore;
 

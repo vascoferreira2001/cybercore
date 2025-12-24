@@ -1,5 +1,8 @@
+-- ⚠️ NÃO IMPORTAR DIRETAMENTE - FICHEIRO LEGACY ⚠️
+-- Este ficheiro é apenas para referência.
+-- Use sql/schema.sql para instalação limpa.
+
 -- Legacy: moved into consolidated schema.sql
--- Keeping for reference; prefer loading sql/schema.sql.
 
 -- Tabela para guardar configurações do website
 CREATE TABLE IF NOT EXISTS settings (
