@@ -43,8 +43,7 @@ $smtp = [
 $maintenance = [
   'disable_login' => getSetting($pdo, 'maintenance_disable_login', '0'),
   'message' => getSetting($pdo, 'maintenance_message', ''),
-  'exception_roles' => getSetting($pdo, 'maintenance_exception_roles', 'Gestor'),
-  'hide_menus_by_role' => json_decode(getSetting($pdo, 'maintenance_hide_menus_by_role', '{}'), true) ?: []
+  'exception_roles' => getSetting($pdo, 'maintenance_exception_roles', 'Gestor')
 ];
 
 // Função auxiliar para carregar permissão (definida no início para uso global)
@@ -296,25 +295,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $disableLogin = isset($_POST['maintenance_disable_login']) ? '1' : '0';
     $messageText = trim($_POST['maintenance_message'] ?? '');
     $exceptionRoles = trim($_POST['maintenance_exception_roles'] ?? 'Gestor');
-    
-    // Estrutura: {'role_name': ['menu1', 'menu2', ...], ...}
-    $hideMenusByRole = [];
-    $roles = ['Cliente', 'Suporte ao Cliente', 'Suporte Técnica', 'Suporte Financeira', 'Gestor'];
-    foreach ($roles as $role) {
-      $menus = $_POST['maintenance_hide_menus_' . str_replace(' ', '_', $role)] ?? [];
-      if (!is_array($menus)) {
-        $menus = [];
-      }
-      $menus = array_values(array_filter(array_map('trim', $menus), function($v){ return $v !== ''; }));
-      if (!empty($menus)) {
-        $hideMenusByRole[$role] = $menus;
-      }
-    }
 
     setSetting($pdo, 'maintenance_disable_login', $disableLogin);
     setSetting($pdo, 'maintenance_message', $messageText);
     setSetting($pdo, 'maintenance_exception_roles', $exceptionRoles ?: 'Gestor');
-    setSetting($pdo, 'maintenance_hide_menus_by_role', json_encode($hideMenusByRole));
 
     header('Location: settings.php?tab=manutencao&success=1');
     exit;
@@ -558,48 +542,6 @@ $loginBackgroundPath = getAssetPath($loginBackground);
         <label style="display:block;margin-top:8px">Cargos/roles que podem entrar (separados por vírgula)</label>
         <input type="text" name="maintenance_exception_roles" value="<?php echo htmlspecialchars($maintenance['exception_roles']); ?>" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px">
         <p class="small" style="margin-top:6px">Ex.: Gestor, Suporte ao Cliente</p>
-      </div>
-
-      <div style="margin-bottom:16px;padding:12px;border:1px solid #ddd;border-radius:4px">
-        <h4 style="margin-top:0">Ocultar menus na Área de Cliente por Cargo</h4>
-        <p class="small" style="margin-bottom:12px">Selecione os menus a ocultar para cada cargo durante a manutenção.</p>
-        <?php 
-          $menuOptions = [
-            'painel' => 'Painel',
-            'clientes' => 'Clientes',
-            'tarefas' => 'Tarefas',
-            'servicos' => 'Serviços',
-            'avisos_pagamento' => 'Avisos de Pagamento',
-            'pagamentos' => 'Pagamentos',
-            'contratos' => 'Contratos',
-            'orcamentos' => 'Orçamentos',
-            'notas' => 'Notas',
-            'live_chat' => 'Live Chat',
-            'equipa' => 'Equipa',
-            'tickets' => 'Tickets',
-            'avisos' => 'Avisos',
-            'knowledge_base' => 'Banco de Conhecimentos',
-            'documentos' => 'Documentos',
-            'despesas' => 'Despesas',
-            'relatorios' => 'Relatórios'
-          ];
-          $roles = ['Cliente', 'Suporte ao Cliente', 'Suporte Técnica', 'Suporte Financeira', 'Gestor'];
-        ?>
-        <?php foreach ($roles as $role): ?>
-          <div style="margin-bottom:16px;padding:12px;background:#f9f9f9;border-radius:4px;border-left:4px solid #1976d2">
-            <h5 style="margin-top:0"><?php echo htmlspecialchars($role); ?></h5>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 12px">
-              <?php 
-                $roleKey = str_replace(' ', '_', $role);
-                $hiddenMenus = $maintenance['hide_menus_by_role'][$role] ?? [];
-              ?>
-              <?php foreach ($menuOptions as $key => $label): ?>
-                <label><input type="checkbox" name="maintenance_hide_menus_<?php echo htmlspecialchars($roleKey); ?>[]" value="<?php echo htmlspecialchars($key); ?>" <?php echo in_array($key, $hiddenMenus, true)?'checked':''; ?>> <?php echo htmlspecialchars($label); ?></label>
-              <?php endforeach; ?>
-            </div>
-          </div>
-        <?php endforeach; ?>
-        <p class="small">Os menus selecionados ficarão ocultos para cada cargo respetivo enquanto este modo estiver ativo.</p>
       </div>
 
       <div class="form-row" style="margin-top:12px">
