@@ -16,6 +16,8 @@ if (empty($maintenanceExceptions)) {
 }
 
 $error = '';
+$siteLogo = getSetting($pdo, 'site_logo');
+
 // Basic rate limiting: max 5 attempts per 10 minutes per session
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate();
@@ -59,15 +61,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 }
-
-// Carregar background
-$loginBackground = getSetting($pdo, 'login_background');
-$backgroundUrl = getAssetUrl($loginBackground);
-$backgroundPath = getAssetPath($loginBackground);
-$backgroundStyle = '';
-if ($loginBackground && file_exists($backgroundPath)) {
-  $backgroundStyle = 'background-image:url(' . htmlspecialchars($backgroundUrl) . '?v=' . time() . ');background-size:cover;background-position:center;background-attachment:fixed';
-}
 ?>
 <!doctype html>
 <html lang="pt">
@@ -75,54 +68,32 @@ if ($loginBackground && file_exists($backgroundPath)) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Login - CyberCore</title>
-  <link rel="stylesheet" href="assets/css/style.css">
   <style>
-    :root {
-      --primary: #123659;
-      --primary-light: #1e4a7a;
-      --bg-light: #f4f5f7;
-      --text-dark: #1e2e3e;
-      --text-gray: #5a6c7d;
-      --border: #e8e9ed;
-      --success: #32a852;
-      --error: #c41c3b;
-    }
-
     * {
+      margin: 0;
+      padding: 0;
       box-sizing: border-box;
     }
 
     html, body {
-      margin: 0;
-      padding: 0;
-      background: #ffffff;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      color: #333333;
+      background: #fafafa;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-      color: var(--text-dark);
-    }
-
-    .login-logo {
-      text-align: center;
-      padding: 20px 0;
-      margin-bottom: 20px;
-    }
-
-    .login-container {
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
-      background: var(--bg-light);
     }
 
-    .login-content {
+    .auth-container {
       display: flex;
       flex: 1;
-      background: var(--bg-light);
     }
 
-    .login-section {
+    .auth-column {
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -131,167 +102,212 @@ if ($loginBackground && file_exists($backgroundPath)) {
       padding: 40px 20px;
     }
 
-    .login-section.login-existing {
+    .auth-column.existing {
       background: #ffffff;
-      border-right: 1px solid var(--border);
+      border-right: 1px solid #eeeeee;
     }
 
-    .login-section.login-new {
-      background: var(--bg-light);
+    .auth-column.new {
+      background: #fafafa;
     }
 
-    .login-box {
+    .auth-box {
       width: 100%;
-      max-width: 340px;
+      max-width: 350px;
     }
 
-    .login-box h2 {
-      font-size: 18px;
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .auth-logo img {
+      height: 40px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .auth-logo svg {
+      height: 40px;
+      width: auto;
+    }
+
+    .auth-box h2 {
+      font-size: 16px;
       font-weight: 600;
-      color: var(--primary);
-      margin: 0 0 24px 0;
+      color: #000000;
+      margin-bottom: 20px;
       text-align: left;
     }
 
     .form-group {
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .form-group label {
       display: block;
       font-size: 13px;
-      color: var(--text-dark);
+      color: #333333;
       margin-bottom: 6px;
       font-weight: 500;
-      text-transform: capitalize;
     }
 
     .form-group input,
     .form-group select {
       width: 100%;
-      padding: 11px 12px;
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      font-size: 14px;
-      color: var(--text-dark);
+      padding: 10px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 2px;
+      font-size: 13px;
+      color: #333333;
       font-family: inherit;
       transition: border-color 0.2s, box-shadow 0.2s;
       background: #ffffff;
     }
 
     .form-group input::placeholder {
-      color: #b0b8c1;
+      color: #999999;
     }
 
     .form-group input:focus,
     .form-group select:focus {
       outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(18, 54, 89, 0.08);
+      border-color: #ff6600;
+      box-shadow: 0 0 0 1px rgba(255, 102, 0, 0.2);
     }
 
     .form-group input:disabled {
-      background: #f9f9f9;
+      background: #f5f5f5;
       cursor: not-allowed;
-      color: #b0b8c1;
+      color: #999999;
     }
 
     .form-actions {
       margin-top: 20px;
     }
 
-    .btn-primary {
+    .btn-login {
       width: 100%;
-      padding: 11px;
-      background: var(--primary);
+      padding: 10px;
+      background: #000000;
       color: #ffffff;
       border: none;
-      border-radius: 3px;
-      font-size: 14px;
-      font-weight: 500;
+      border-radius: 2px;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
     }
 
-    .btn-primary:hover {
-      background: var(--primary-light);
+    .btn-login:hover {
+      background: #333333;
     }
 
-    .btn-primary:active {
-      transform: translateY(1px);
-    }
-
-    .login-footer {
-      margin-top: 16px;
-      text-align: center;
+    .btn-register {
+      width: 100%;
+      padding: 10px;
+      background: #ff6600;
+      color: #ffffff;
+      border: none;
+      border-radius: 2px;
       font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
     }
 
-    .link-section {
-      margin-top: 12px;
+    .btn-register:hover {
+      background: #e55a00;
+    }
+
+    .form-footer {
+      margin-top: 14px;
       text-align: center;
       font-size: 12px;
     }
 
-    .link-section a {
-      color: var(--primary);
+    .form-footer a {
+      color: #0066cc;
       text-decoration: none;
-      font-weight: 500;
     }
 
-    .link-section a:hover {
+    .form-footer a:hover {
       text-decoration: underline;
     }
 
     .error-message {
-      background: #ffefef;
-      border: 1px solid #ffcdd2;
-      color: var(--error);
-      padding: 11px 13px;
-      border-radius: 3px;
+      background: #fff4f0;
+      border: 1px solid #ffcccc;
+      color: #cc3300;
+      padding: 10px 12px;
+      border-radius: 2px;
       margin-bottom: 16px;
       font-size: 12px;
       line-height: 1.5;
     }
 
-    .checkbox-consent {
-      margin-bottom: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
+    .checkbox-group {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #eeeeee;
     }
 
-    .checkbox-consent a {
-      color: var(--primary);
+    .checkbox-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: auto;
+      height: 14px;
+      margin-right: 6px;
+      margin-top: 1px;
+      cursor: pointer;
+    }
+
+    .checkbox-item label {
+      margin: 0;
+      font-size: 12px;
+      color: #666666;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+
+    .checkbox-item a {
+      color: #0066cc;
       text-decoration: none;
     }
 
-    .checkbox-consent a:hover {
+    .checkbox-item a:hover {
       text-decoration: underline;
     }
 
+    .benefits {
+      font-size: 12px;
+      color: #666666;
+      line-height: 1.6;
+      margin-top: 16px;
+    }
+
+    .benefits strong {
+      display: block;
+      color: #000000;
+      margin-bottom: 6px;
+    }
+
     @media (max-width: 768px) {
-      .login-content {
+      .auth-container {
         flex-direction: column;
       }
 
-      .login-section.login-existing {
+      .auth-column.existing {
         border-right: none;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid #eeeeee;
       }
 
-      .login-section.login-existing,
-      .login-section.login-new {
-        padding: 32px 20px;
-      }
-
-      .login-logo {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-      }
-
-      .login-container {
-        padding-top: 60px;
+      .auth-column {
+        padding: 30px 20px;
       }
     }
   </style>
@@ -301,85 +317,97 @@ if ($loginBackground && file_exists($backgroundPath)) {
   <?php renderMaintenanceModal($maintenanceMessage ?: 'O login está temporariamente desativado para clientes.', ['disable_form' => false]); ?>
 <?php endif; ?>
 
-<div class="login-container">
-  <!-- Logo no topo -->
-  <div class="login-logo">
-    <svg width="120" height="40" viewBox="0 0 120 40" fill="none">
-      <text x="0" y="28" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#123659">CyberCore</text>
-    </svg>
+<div class="auth-container">
+  <div class="auth-column existing">
+    <div class="auth-box">
+      <div class="auth-logo">
+        <?php if ($siteLogo && getAssetPath($siteLogo) && file_exists(getAssetPath($siteLogo))): ?>
+          <img src="<?php echo htmlspecialchars(getAssetUrl($siteLogo)); ?>?v=<?php echo time(); ?>" alt="Logo">
+        <?php else: ?>
+          <svg width="100" height="40" viewBox="0 0 100 40" fill="none">
+            <text x="0" y="28" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#000000">CyberCore</text>
+          </svg>
+        <?php endif; ?>
+      </div>
+
+      <h2>Já sou cliente</h2>
+
+      <?php if($error): ?>
+        <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+      <?php endif; ?>
+
+      <form method="post">
+        <?php echo csrf_input(); ?>
+
+        <div class="form-group">
+          <label>Identificador ou endereço de e-mail</label>
+          <input type="email" name="email" required autofocus value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
+        </div>
+
+        <div class="form-group">
+          <label>Palavra-passe</label>
+          <input type="password" name="password" required>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-login">Aceder</button>
+        </div>
+
+        <div class="form-footer">
+          <a href="forgot_password.php">Perdeu o identificador ou a palavra-passe?</a>
+        </div>
+      </form>
+    </div>
   </div>
 
-  <div class="login-content">
-    <div class="login-section login-existing">
-      <div class="login-box">
-        <h2>Já sou cliente</h2>
-        
-        <?php if($error): ?>
-          <div class="error-message"><?php echo $error; ?></div>
-        <?php endif; ?>
-        
-        <form method="post">
-          <?php echo csrf_input(); ?>
-          
-          <div class="form-group">
-            <label>Identificador ou endereço de e-mail</label>
-            <input type="email" name="email" required autofocus value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" placeholder="">
-          </div>
+  <div class="auth-column new">
+    <div class="auth-box">
+      <h2>Sou novo</h2>
 
-          <div class="form-group">
-            <label>Palavra-passe</label>
-            <input type="password" name="password" required placeholder="">
-          </div>
+      <form action="register.php" method="get">
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" placeholder="Seu primeiro nome" disabled>
+        </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn-primary">Aceder</button>
-          </div>
+        <div class="form-group">
+          <label>Sobrenome</label>
+          <input type="text" placeholder="Seu sobrenome" disabled>
+        </div>
 
-          <div class="link-section">
-            <a href="forgot_password.php">Perdeu o identificador ou a palavra-passe?</a>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" placeholder="seu@email.com" disabled>
+        </div>
 
-    <div class="login-section login-new">
-      <div class="login-box">
-        <h2>Sou novo na CyberCore</h2>
-        
-        <form action="register.php" method="get" style="margin-bottom: 0;">
-          <div class="form-group">
-            <label>Nome</label>
-            <input type="text" placeholder="Seu primeiro nome" disabled style="background: #f9f9f9; cursor: not-allowed;">
-          </div>
+        <div class="form-group">
+          <label>Palavra-passe</label>
+          <input type="password" placeholder="••••••••" disabled>
+        </div>
 
-          <div class="form-group">
-            <label>Sobrenome</label>
-            <input type="text" placeholder="Seu sobrenome" disabled style="background: #f9f9f9; cursor: not-allowed;">
+        <div class="checkbox-group">
+          <div class="checkbox-item">
+            <input type="checkbox" disabled>
+            <label>Aceito os <a href="#">Termos e condições</a></label>
           </div>
-
-          <div class="form-group">
-            <label>E-mail</label>
-            <input type="email" placeholder="seu@email.com" disabled style="background: #f9f9f9; cursor: not-allowed;">
-          </div>
-
-          <div class="form-group">
-            <label>Palavra-passe</label>
-            <input type="password" placeholder="••••••••" disabled style="background: #f9f9f9; cursor: not-allowed;">
-          </div>
-
-          <div class="checkbox-consent">
-            <label style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px;">
-              <input type="checkbox" disabled style="margin-top: 2px; cursor: not-allowed;">
-              <span style="font-size: 12px; color: var(--text-gray);">Aceito os <a href="#" style="color: var(--primary); text-decoration: none;">Termos e condições</a></span>
-            </label>
-            <label style="display: flex; align-items: flex-start; gap: 8px;">
-              <input type="checkbox" disabled style="margin-top: 2px; cursor: not-allowed;">
-              <span style="font-size: 12px; color: var(--text-gray);">Aceito receber e-mails relativos às novidades e ofertas comerciais</span>
+          <div class="checkbox-item">
+            <label>
+              <input type="checkbox" disabled style="margin-right: 6px;">
+              Aceito receber e-mails relativos às novidades e ofertas comerciais
             </label>
           </div>
+        </div>
 
-          <button type="submit" class="btn-primary" style="background: var(--success);">Criar uma conta</button>
-        </form>
+        <div class="form-actions">
+          <button type="submit" class="btn-register">Criar uma conta</button>
+        </div>
+      </form>
+
+      <div class="benefits">
+        <strong>Benefícios:</strong>
+        ✓ Sem taxas de configuração<br>
+        ✓ Suporte 24/7 em português<br>
+        ✓ Controlo total dos seus serviços
       </div>
     </div>
   </div>
