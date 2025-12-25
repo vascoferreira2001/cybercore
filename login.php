@@ -3,71 +3,84 @@ require_once __DIR__ . '/inc/config.php';
 require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/csrf.php';
 require_once __DIR__ . '/inc/settings.php';
-require_once __DIR__ . '/inc/maintenance.php';
+require_once __DIR__ . '/inc/debug.php';
+
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-$pdo = getDB();
-$maintenanceDisabled = getSetting($pdo, 'maintenance_disable_login', '0') === '1';
-$maintenanceMessage = trim(getSetting($pdo, 'maintenance_message', ''));
-$maintenanceExceptionsRaw = getSetting($pdo, 'maintenance_exception_roles', 'Gestor');
-$maintenanceExceptions = array_filter(array_map('trim', explode(',', $maintenanceExceptionsRaw)));
-if (empty($maintenanceExceptions)) {
-  $maintenanceExceptions = ['Gestor'];
+if (isset($_SESSION['user_id'])) {
+  header('Location: dashboard.php');
+  exit;
 }
 
-$error = '';
+$pdo = getDB();
 $siteLogo = getSetting($pdo, 'site_logo');
+$errors = [];
+$maxAttempts = 5;
+$lockoutTime = 600;
 
-// Basic rate limiting: max 5 attempts per 10 minutes per session
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate();
-  $now = time();
-  $attempts = $_SESSION['login_attempts'] ?? [];
-  // keep only recent attempts
-  $attempts = array_filter($attempts, function($t) use ($now){ return $t > ($now - 600); });
-  if (count($attempts) >= 5) {
-    $error = 'Demasiadas tentativas. Tente novamente mais tarde.';
+  
+  $email = $_POST['email'] ?? '';
+  $password = $_POST['password'] ?? '';
+  
+  $clientIP = $_SERVER['REMOTE_ADDR'];
+  $key = 'login_attempts_' . md5($clientIP . $email);
+  $lockKey = 'login_lockout_' . md5($clientIP . $email);
+  
+  if (apcu_exists($lockKey)) {
+    $errors[] = 'Conta bloqueada temporariamente. Tente novamente em 10 minutos.';
+  } elseif (apcu_exists($key) && apcu_fetch($key) >= $maxAttempts) {
+    $errors[] = 'Demasiadas tentativas falhadas. Conta bloqueada por 10 minutos.';
+    apcu_store($lockKey, true, $lockoutTime);
   } else {
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $stmt = $pdo->prepare('SELECT id, role, password_hash, email_verified FROM users WHERE email = ?');
-    $stmt->execute([$email]);
-    $u = $stmt->fetch();
-    if ($u && password_verify($password, $u['password_hash'])) {
-      // Verificar se o email foi verificado (exceto para staff)
-      $isStaff = in_array($u['role'], ['Gestor', 'Suporte ao Cliente', 'Suporte Técnica', 'Suporte Financeira'], true);
-      if (!$isStaff && !$u['email_verified']) {
-        $error = 'Por favor, verifique o seu email antes de fazer login. Verifique a sua caixa de entrada e pasta de spam.';
-        $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login_blocked','Login bloqueado - email não verificado']);
-      } else {
-        $isException = in_array($u['role'], $maintenanceExceptions, true);
-        if ($maintenanceDisabled && !$isException) {
-          $error = $maintenanceMessage ?: 'Login temporariamente desativado devido a manutenção.';
-          $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login_blocked','Login bloqueado por manutenção']);
-        } else {
-          session_regenerate_id(true);
-          $_SESSION['user_id'] = $u['id'];
-          $_SESSION['role'] = $u['role'];
-          $_SESSION['login_attempts'] = []; // reset attempts on success
-          $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login','User logged in']);
-          header('Location: dashboard.php');
+    $attempts = apcu_fetch($key) ?? 0;
+    
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      $errors[] = 'Email inválido.';
+    }
+    
+    if (empty($errors)) {
+      $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?');
+      $stmt->execute([$email]);
+      $user = $stmt->fetch();
+      
+      if ($user && password_verify($password, $user['password_hash'])) {
+        apcu_delete($key);
+        
+        if ($user['email_verified'] == 0 && $user['role'] === 'Cliente') {
+          $_SESSION['pending_email_verification'] = $email;
+          header('Location: verify_email.php?step=resend');
           exit;
         }
+        
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['email'] = $user['email'];
+        $_SESSION['first_name'] = $user['first_name'];
+        $_SESSION['last_name'] = $user['last_name'];
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['login_time'] = time();
+        
+        $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$user['id'],'login','User logged in']);
+        
+        header('Location: dashboard.php');
+        exit;
+      } else {
+        $errors[] = 'Email ou password incorretos.';
+        apcu_store($key, $attempts + 1, 600);
       }
-    } else {
-      $attempts[] = $now;
-      $_SESSION['login_attempts'] = $attempts;
-      $error = 'Credenciais inválidas.';
     }
   }
 }
-?>
-<!doctype html>
-<html lang="pt">
+?><!doctype html>
+<html lang="pt-PT">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Login - CyberCore</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -76,68 +89,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     html, body {
-      height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
-      font-size: 14px;
-      color: #333333;
-      background: #fafafa;
+      font-family: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #333;
+      line-height: 1.6;
+      min-height: 100vh;
     }
 
     body {
       display: flex;
-      flex-direction: column;
-    }
-
-    .auth-container {
-      display: flex;
-      flex: 1;
-    }
-
-    .auth-column {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
-      padding: 40px 20px;
+      justify-content: center;
+      padding: 20px;
     }
 
-    .auth-column.existing {
-      background: #ffffff;
-      border-right: 1px solid #eeeeee;
-    }
-
-    .auth-column.new {
-      background: #fafafa;
-    }
-
-    .auth-box {
+    .login-wrapper {
       width: 100%;
-      max-width: 350px;
+      max-width: 900px;
     }
 
-    .auth-logo {
+    .login-header {
       text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .login-logo {
+      height: 50px;
       margin-bottom: 30px;
     }
 
-    .auth-logo img {
-      height: 40px;
+    .login-logo img {
+      height: 50px;
       width: auto;
       object-fit: contain;
     }
 
-    .auth-logo svg {
-      height: 40px;
+    .login-logo svg {
+      height: 50px;
       width: auto;
     }
 
-    .auth-box h2 {
+    .login-title {
+      font-size: 32px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 10px;
+    }
+
+    .login-subtitle {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .login-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      margin-top: 40px;
+    }
+
+    .login-column {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-section-title {
       font-size: 16px;
       font-weight: 600;
-      color: #000000;
+      color: #000;
       margin-bottom: 20px;
-      text-align: left;
+    }
+
+    .login-section-subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.5;
     }
 
     .form-group {
@@ -146,270 +173,345 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     .form-group label {
       display: block;
-      font-size: 13px;
-      color: #333333;
-      margin-bottom: 6px;
+      font-size: 12px;
       font-weight: 500;
+      color: #333;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .form-group input,
-    .form-group select {
+    .form-group input {
       width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #d9d9d9;
+      padding: 12px;
+      font-size: 14px;
+      border: 1px solid #ddd;
       border-radius: 2px;
-      font-size: 13px;
-      color: #333333;
-      font-family: inherit;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      background: #ffffff;
+      font-family: "Source Sans 3", sans-serif;
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #007dff;
+      box-shadow: 0 0 0 3px rgba(0, 125, 255, 0.1);
     }
 
     .form-group input::placeholder {
-      color: #999999;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: #ff6600;
-      box-shadow: 0 0 0 1px rgba(255, 102, 0, 0.2);
-    }
-
-    .form-group input:disabled {
-      background: #f5f5f5;
-      cursor: not-allowed;
-      color: #999999;
+      color: #999;
     }
 
     .form-actions {
-      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+      margin-bottom: 20px;
     }
 
-    .btn-login {
-      width: 100%;
-      padding: 10px;
-      background: #000000;
-      color: #ffffff;
+    .btn {
+      flex: 1;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
       border: none;
       border-radius: 2px;
-      font-size: 13px;
-      font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .btn-login:hover {
-      background: #333333;
-    }
-
-    .btn-register {
-      width: 100%;
-      padding: 10px;
-      background: #ff6600;
-      color: #ffffff;
-      border: none;
-      border-radius: 2px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .btn-register:hover {
-      background: #e55a00;
-    }
-
-    .form-footer {
-      margin-top: 14px;
-      text-align: center;
-      font-size: 12px;
-    }
-
-    .form-footer a {
-      color: #0066cc;
+      transition: all 0.2s ease;
       text-decoration: none;
+      text-align: center;
+      display: inline-block;
+      font-family: "Source Sans 3", sans-serif;
     }
 
-    .form-footer a:hover {
+    .btn-primary {
+      background: #007dff;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #0066cc;
+      box-shadow: 0 2px 8px rgba(0, 125, 255, 0.3);
+    }
+
+    .btn-primary:active {
+      background: #0052a3;
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background: #efefef;
+    }
+
+    .forgot-password {
+      text-align: right;
+    }
+
+    .forgot-password a {
+      font-size: 12px;
+      color: #007dff;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .forgot-password a:hover {
+      color: #0066cc;
       text-decoration: underline;
     }
 
-    .error-message {
-      background: #fff4f0;
-      border: 1px solid #ffcccc;
-      color: #cc3300;
-      padding: 10px 12px;
+    .error-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 12px 16px;
       border-radius: 2px;
-      margin-bottom: 16px;
-      font-size: 12px;
+      margin-bottom: 20px;
+      font-size: 13px;
       line-height: 1.5;
     }
 
-    .checkbox-group {
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid #eeeeee;
+    .error-box ul {
+      margin: 0;
+      padding-left: 20px;
     }
 
-    .checkbox-item {
-      display: flex;
-      align-items: flex-start;
+    .error-box li {
+      margin-bottom: 4px;
+    }
+
+    .divider {
+      text-align: center;
+      margin: 30px 0;
+      position: relative;
+    }
+
+    .divider::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 1px;
+      background: #eee;
+    }
+
+    .divider span {
+      background: #fff;
+      padding: 0 10px;
+      position: relative;
+      color: #666;
+      font-size: 12px;
+    }
+
+    .register-info {
+      background: #f9f9f9;
+      padding: 24px;
+      border-radius: 2px;
+      border: 1px solid #f0f0f0;
+    }
+
+    .register-info-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 12px;
+    }
+
+    .register-info-text {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .register-benefits {
+      list-style: none;
+      margin-bottom: 16px;
+    }
+
+    .register-benefits li {
+      font-size: 13px;
+      color: #666;
+      padding-left: 20px;
+      position: relative;
       margin-bottom: 8px;
     }
 
-    .checkbox-item input[type="checkbox"] {
-      width: auto;
-      height: 14px;
-      margin-right: 6px;
-      margin-top: 1px;
-      cursor: pointer;
+    .register-benefits li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: #007dff;
+      font-weight: bold;
     }
 
-    .checkbox-item label {
-      margin: 0;
-      font-size: 12px;
-      color: #666666;
+    .register-button {
+      width: 100%;
+      padding: 12px 24px;
+      background: #007dff;
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
-      line-height: 1.4;
+      font-family: "Source Sans 3", sans-serif;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: block;
+      text-align: center;
     }
 
-    .checkbox-item a {
-      color: #0066cc;
+    .register-button:hover {
+      background: #0066cc;
+      box-shadow: 0 2px 8px rgba(0, 125, 255, 0.3);
+    }
+
+    .footer-text {
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .footer-text a {
+      color: #007dff;
       text-decoration: none;
     }
 
-    .checkbox-item a:hover {
+    .footer-text a:hover {
       text-decoration: underline;
     }
 
-    .benefits {
-      font-size: 12px;
-      color: #666666;
-      line-height: 1.6;
-      margin-top: 16px;
-    }
-
-    .benefits strong {
-      display: block;
-      color: #000000;
-      margin-bottom: 6px;
-    }
-
+    /* Mobile Responsive */
     @media (max-width: 768px) {
-      .auth-container {
+      .login-container {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .login-title {
+        font-size: 24px;
+      }
+
+      .form-actions {
         flex-direction: column;
       }
 
-      .auth-column.existing {
-        border-right: none;
-        border-bottom: 1px solid #eeeeee;
+      .btn {
+        width: 100%;
       }
 
-      .auth-column {
-        padding: 30px 20px;
+      .forgot-password {
+        text-align: left;
+        margin-top: 10px;
+      }
+
+      body {
+        padding: 20px;
+      }
+
+      .login-wrapper {
+        max-width: 100%;
       }
     }
   </style>
 </head>
 <body>
-<?php if ($maintenanceDisabled): ?>
-  <?php renderMaintenanceModal($maintenanceMessage ?: 'O login está temporariamente desativado para clientes.', ['disable_form' => false]); ?>
-<?php endif; ?>
 
-<div class="auth-container">
-  <div class="auth-column existing">
-    <div class="auth-box">
-      <div class="auth-logo">
-        <?php if ($siteLogo && getAssetPath($siteLogo) && file_exists(getAssetPath($siteLogo))): ?>
-          <img src="<?php echo htmlspecialchars(getAssetUrl($siteLogo)); ?>?v=<?php echo time(); ?>" alt="Logo">
-        <?php else: ?>
-          <svg width="100" height="40" viewBox="0 0 100 40" fill="none">
-            <text x="0" y="28" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#000000">CyberCore</text>
-          </svg>
-        <?php endif; ?>
-      </div>
+<div class="login-wrapper">
+  <div class="login-header">
+    <div class="login-logo">
+      <?php if ($siteLogo && getAssetPath($siteLogo) && file_exists(getAssetPath($siteLogo))): ?>
+        <img src="<?php echo htmlspecialchars(getAssetUrl($siteLogo)); ?>?v=<?php echo time(); ?>" alt="Logo">
+      <?php else: ?>
+        <svg viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="10" y="35" font-family="Source Sans 3, sans-serif" font-size="28" font-weight="600" fill="#000">CyberCore</text>
+        </svg>
+      <?php endif; ?>
+    </div>
+    <h1 class="login-title">Bem-vindo</h1>
+    <p class="login-subtitle">Aceda à sua conta CyberCore</p>
+  </div>
 
-      <h2>Já sou cliente</h2>
+  <div class="login-container">
+    <!-- Coluna 1: Login -->
+    <div class="login-column">
+      <h2 class="login-section-title">Já tem conta?</h2>
+      <p class="login-section-subtitle">Faça login com o seu email e password para aceder à sua conta.</p>
 
-      <?php if($error): ?>
-        <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+      <?php if (!empty($errors)): ?>
+        <div class="error-box">
+          <ul>
+            <?php foreach ($errors as $error): ?>
+              <li><?php echo htmlspecialchars($error); ?></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
       <?php endif; ?>
 
       <form method="post">
         <?php echo csrf_input(); ?>
 
         <div class="form-group">
-          <label>Identificador ou endereço de e-mail</label>
-          <input type="email" name="email" required autofocus value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required placeholder="seu@email.com">
         </div>
 
         <div class="form-group">
-          <label>Palavra-passe</label>
-          <input type="password" name="password" required>
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required placeholder="••••••••">
+        </div>
+
+        <div class="forgot-password">
+          <a href="forgot_password.php">Esqueceu a password?</a>
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn-login">Aceder</button>
-        </div>
-
-        <div class="form-footer">
-          <a href="forgot_password.php">Perdeu o identificador ou a palavra-passe?</a>
+          <button type="submit" class="btn btn-primary">Entrar</button>
         </div>
       </form>
+    </div>
+
+    <!-- Coluna 2: Registo -->
+    <div class="login-column">
+      <div class="register-info">
+        <h2 class="register-info-title">Novo cliente?</h2>
+        <p class="register-info-text">Crie uma conta para aceder a todos os serviços da CyberCore.</p>
+        
+        <ul class="register-benefits">
+          <li>Gestão de domínios e alojamento</li>
+          <li>Suporte técnico 24/7</li>
+          <li>Faturação centralizada</li>
+          <li>Painel de controlo completo</li>
+        </ul>
+
+        <a href="register-step1.php" class="register-button">Criar conta</a>
+
+        <div class="divider">
+          <span>ou</span>
+        </div>
+
+        <p style="font-size: 11px; color: #999; text-align: center;">
+          Já tem acesso? Recupere a sua conta usando o botão de recuperação de password.
+        </p>
+      </div>
     </div>
   </div>
 
-  <div class="auth-column new">
-    <div class="auth-box">
-      <h2>Sou novo</h2>
-
-      <form action="register.php" method="get">
-        <div class="form-group">
-          <label>Nome</label>
-          <input type="text" placeholder="Seu primeiro nome" disabled>
-        </div>
-
-        <div class="form-group">
-          <label>Sobrenome</label>
-          <input type="text" placeholder="Seu sobrenome" disabled>
-        </div>
-
-        <div class="form-group">
-          <label>E-mail</label>
-          <input type="email" placeholder="seu@email.com" disabled>
-        </div>
-
-        <div class="form-group">
-          <label>Palavra-passe</label>
-          <input type="password" placeholder="••••••••" disabled>
-        </div>
-
-        <div class="checkbox-group">
-          <div class="checkbox-item">
-            <input type="checkbox" disabled>
-            <label>Aceito os <a href="#">Termos e condições</a></label>
-          </div>
-          <div class="checkbox-item">
-            <label>
-              <input type="checkbox" disabled style="margin-right: 6px;">
-              Aceito receber e-mails relativos às novidades e ofertas comerciais
-            </label>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn-register">Criar uma conta</button>
-        </div>
-      </form>
-
-      <div class="benefits">
-        <strong>Benefícios:</strong>
-        ✓ Sem taxas de configuração<br>
-        ✓ Suporte 24/7 em português<br>
-        ✓ Controlo total dos seus serviços
-      </div>
-    </div>
+  <div class="footer-text">
+    <p>
+      © 2025 CyberCore. Todos os direitos reservados. | 
+      <a href="#">Privacidade</a> | 
+      <a href="#">Termos de Serviço</a> | 
+      <a href="#">Contacte-nos</a>
+    </p>
   </div>
 </div>
 
