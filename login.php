@@ -21,12 +21,12 @@ $lockoutTime = 600;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate();
   
-  $email = $_POST['email'] ?? '';
+  $emailOrId = $_POST['email'] ?? '';
   $password = $_POST['password'] ?? '';
   
   $clientIP = $_SERVER['REMOTE_ADDR'];
-  $key = 'login_attempts_' . md5($clientIP . $email);
-  $lockKey = 'login_lockout_' . md5($clientIP . $email);
+  $key = 'login_attempts_' . md5($clientIP . $emailOrId);
+  $lockKey = 'login_lockout_' . md5($clientIP . $emailOrId);
   
   if (apcu_exists($lockKey)) {
     $errors[] = 'Conta bloqueada temporariamente. Tente novamente em 10 minutos.';
@@ -36,20 +36,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } else {
     $attempts = apcu_fetch($key) ?? 0;
     
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      $errors[] = 'Email inválido.';
-    }
-    
     if (empty($errors)) {
-      $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?');
-      $stmt->execute([$email]);
+      // Permitir login com email OU identificador (CYC#...)
+      if (strpos($emailOrId, 'CYC#') === 0) {
+        // Login com identificador
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE identifier = ?');
+        $stmt->execute([$emailOrId]);
+      } else {
+        // Login com email
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?');
+        $stmt->execute([$emailOrId]);
+      }
       $user = $stmt->fetch();
       
       if ($user && password_verify($password, $user['password_hash'])) {
         apcu_delete($key);
         
         if ($user['email_verified'] == 0 && $user['role'] === 'Cliente') {
-          $_SESSION['pending_email_verification'] = $email;
+          $_SESSION['pending_email_verification'] = $user['email'];
           header('Location: verify_email.php?step=resend');
           exit;
         }
@@ -67,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: dashboard.php');
         exit;
       } else {
-        $errors[] = 'Email ou password incorretos.';
+        $errors[] = 'Email ou palavra-passe incorretos.';
         apcu_store($key, $attempts + 1, 600);
       }
     }
@@ -460,17 +464,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php echo csrf_input(); ?>
 
         <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" required placeholder="seu@email.com">
+          <label for="email">Email ou Identificador</label>
+          <input type="text" id="email" name="email" required placeholder="seu@email.com ou CYC#12345">
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
+          <label for="password">Palavra-passe</label>
           <input type="password" id="password" name="password" required placeholder="••••••••">
         </div>
 
         <div class="forgot-password">
-          <a href="forgot_password.php">Esqueceu a password?</a>
+          <a href="forgot_password.php">Esqueceu a palavra-passe?</a>
         </div>
 
         <div class="form-actions">
@@ -492,7 +496,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <li>Painel de controlo completo</li>
         </ul>
 
-        <a href="register-step1.php" class="register-button">Criar conta</a>
+          <a href="register.php" class="register-button">Criar conta</a>
 
         <div class="divider">
           <span>ou</span>

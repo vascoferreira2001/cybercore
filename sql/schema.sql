@@ -1,13 +1,18 @@
 -- Schema para CyberCore Área de Cliente (MySQL)
 
+-- Último atualizado: 25 de Dezembro de 2025
+-- Design System: Font=Source Sans 3, Cor Primária=#007dff
+-- Segurança: Email UNIQUE, Identificador UNIQUE (CYC#00001), Password Hashed
+
 CREATE DATABASE IF NOT EXISTS cybercore CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE cybercore;
 
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
+    identifier VARCHAR(50) NOT NULL UNIQUE COMMENT 'Identificador único formato CYC#00001',
   first_name VARCHAR(100) NOT NULL,
   last_name VARCHAR(100) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE COMMENT 'Email único - não pode haver duplicatas',
   country VARCHAR(100),
   address VARCHAR(255),
   city VARCHAR(100),
@@ -22,7 +27,9 @@ CREATE TABLE IF NOT EXISTS users (
   email_verified TINYINT(1) DEFAULT 0,
   email_verification_token VARCHAR(64) DEFAULT NULL,
   email_verification_expires DATETIME DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_identifier (identifier),
+  KEY idx_email (email)
 );
 
 CREATE TABLE IF NOT EXISTS tickets (

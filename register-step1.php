@@ -1,12 +1,18 @@
 <?php
 require_once __DIR__ . '/inc/config.php';
+require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/csrf.php';
 require_once __DIR__ . '/inc/settings.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-$siteLogo = getSetting(getDB(), 'site_logo');
+$pdo = getDB();
+$siteLogo = getSetting($pdo, 'site_logo');
 $errors = [];
 $step1Data = ['first_name' => '', 'last_name' => '', 'email' => '', 'password' => ''];
+
+// Fluxo legado: redirecionar sempre para o registo único
+header('Location: register.php');
+exit;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate();
