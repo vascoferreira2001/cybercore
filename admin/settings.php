@@ -4,6 +4,7 @@ require_once __DIR__ . '/../inc/db.php';
 require_once __DIR__ . '/../inc/csrf.php';
 require_once __DIR__ . '/../inc/settings.php';
 require_once __DIR__ . '/../inc/mailer.php';
+require_once __DIR__ . '/../inc/email_templates.php';
 
 requireLogin();
 $user = currentUser();
@@ -77,6 +78,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sent = sendMail($testEmail, 'Teste SMTP - CyberCore', '<p>Este é um email de teste SMTP enviado em ' . date('d/m/Y H:i') . '</p>', 'Teste SMTP');
     header('Location: settings.php?tab=email&smtp_test=1&ok=' . ($sent ? '1' : '0'));
     exit;
+  }
+
+  // === MODELOS DE EMAIL ===
+  if (isset($_POST['update_email_template'])) {
+    $templateId = (int)$_POST['template_id'];
+    $data = [
+      'subject' => trim($_POST['subject'] ?? ''),
+      'body_html' => $_POST['body_html'] ?? '',
+      'is_active' => isset($_POST['is_active']) ? 1 : 0
+    ];
+    
+    if (updateEmailTemplate($pdo, $templateId, $data)) {
+      header('Location: settings.php?tab=modelos-email&success=1');
+      exit;
+    } else {
+      header('Location: settings.php?tab=modelos-email&error=1');
+      exit;
+    }
+  }
+
+  if (isset($_POST['test_email_template'])) {
+    $templateKey = $_POST['template_key'] ?? '';
+    $testEmail = $_POST['test_email_address'] ?? '';
+    
+    if ($testEmail && filter_var($testEmail, FILTER_VALIDATE_EMAIL)) {
+      $testVars = [
+        'user_name' => 'Utilizador Teste',
+        'verification_link' => SITE_URL . 'verify_email.php?token=TEST_TOKEN_12345',
+        'reset_link' => SITE_URL . 'reset_password.php?token=TEST_TOKEN_67890',
+        'dashboard_link' => SITE_URL . 'dashboard.php'
+      ];
+      
+      $sent = sendTemplatedEmail($pdo, $templateKey, $testEmail, 'Utilizador Teste', $testVars);
+      header('Location: settings.php?tab=modelos-email&test=' . ($sent ? '1' : '0'));
+      exit;
+    } else {
+      header('Location: settings.php?tab=modelos-email&test=0');
+      exit;
+    }
   }
 
   // === EQUIPA: Departamentos ===
@@ -160,8 +200,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'manage_domains',
       'view_services',
       'edit_profile',
-      'disable_account_creation',
-      'verify_email_before_login',
       'client_view_documents',
       'client_add_documents'
     ];
@@ -1068,7 +1106,7 @@ $loginBackgroundPath = getAssetPath($loginBackground);
     <?php 
       $clientPermsKeys = [
         'view_invoices','pay_invoices','open_tickets','manage_domains','view_services','edit_profile',
-        'disable_account_creation','verify_email_before_login','client_view_documents','client_add_documents'
+        'client_view_documents','client_add_documents'
       ];
       $rows = $pdo->query('SELECT * FROM client_permissions')->fetchAll();
       $permMap = [];
@@ -1078,12 +1116,7 @@ $loginBackgroundPath = getAssetPath($loginBackground);
       <?php echo csrf_input(); ?>
       <h3>Permissões dos Clientes</h3>
       <p class="small" style="margin-bottom:12px">Defina o que os clientes podem fazer na área de cliente.</p>
-
-      <div style="margin-bottom:16px;padding:12px;border:1px solid #ddd;border-radius:4px">
-        <h4 style="margin-top:0">Criação de Conta e Login</h4>
-        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[disable_account_creation]" <?php echo !empty($permMap['disable_account_creation'])?'checked':''; ?>> Desativar criação de conta (desativa o registo no login)</label>
-        <label style="display:block;margin-bottom:8px"><input type="checkbox" name="client_perm[verify_email_before_login]" <?php echo !empty($permMap['verify_email_before_login'])?'checked':''; ?>> Verificar e-mail antes de efetuar o login</label>
-      </div>
+      <p class="small" style="margin-bottom:12px;padding:8px;background:#e8f5e9;border-left:3px solid #4caf50"><strong>Nota:</strong> A verificação de email é obrigatória para todos os novos registos. O registo é desativado automaticamente quando o Modo de Manutenção está ativo.</p>
 
       <div style="margin-bottom:16px;padding:12px;border:1px solid #ddd;border-radius:4px">
         <h4 style="margin-top:0">Documentos</h4>
@@ -1316,10 +1349,227 @@ $loginBackgroundPath = getAssetPath($loginBackground);
   
   <!-- TAB: MODELOS DE EMAIL -->
   <?php if ($activeTab === 'modelos'): ?>
-    <div style="padding:20px;background:#f5f5f5;border-radius:4px;text-align:center">
-      <p style="color:#666;font-style:italic">Gestão de modelos de email em desenvolvimento...</p>
-      <p class="small">Aqui poderá criar e personalizar modelos de email para diferentes eventos do sistema (confirmações, alertas, notificações, etc.).</p>
+    <?php
+      // Carregar todos os templates
+      $templates = listEmailTemplates($pdo, true);
+      $editingId = isset($_GET['edit']) ? (int)$_GET['edit'] : null;
+      $editingTemplate = null;
+      if ($editingId) {
+        foreach ($templates as $t) {
+          if ($t['id'] === $editingId) {
+            $editingTemplate = $t;
+            break;
+          }
+        }
+      }
+    ?>
+    
+    <!-- Mensagens de feedback -->
+    <?php if (isset($_GET['test'])): ?>
+      <?php if ($_GET['test'] === '1'): ?>
+        <div style="background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:4px;margin-bottom:16px">
+          ✓ Email de teste enviado com sucesso!
+        </div>
+      <?php else: ?>
+        <div style="background:#ffebee;color:#c62828;padding:12px;border-radius:4px;margin-bottom:16px">
+          ✗ Erro ao enviar email de teste. Verifique as configurações SMTP.
+        </div>
+      <?php endif; ?>
+    <?php endif; ?>
+    
+    <!-- Edição de Template -->
+    <?php if ($editingTemplate): ?>
+      <div style="background:#fff3cd;border:1px solid #ffc107;padding:16px;border-radius:4px;margin-bottom:20px">
+        <h3 style="margin-top:0;color:#856404">
+          ✏️ Editando: <?php echo htmlspecialchars($editingTemplate['template_name']); ?>
+          <?php if ($editingTemplate['is_system']): ?>
+            <span style="background:#17a2b8;color:#fff;padding:4px 8px;border-radius:3px;font-size:12px;margin-left:8px">SISTEMA</span>
+          <?php endif; ?>
+        </h3>
+        
+        <form method="post">
+          <?php echo csrf_input(); ?>
+          <input type="hidden" name="template_id" value="<?php echo $editingTemplate['id']; ?>">
+          
+          <div class="form-row">
+            <label><strong>Assunto do Email</strong> <span style="color:red">*</span></label>
+            <input type="text" name="subject" 
+                   value="<?php echo htmlspecialchars($editingTemplate['subject']); ?>" 
+                   required
+                   placeholder="Ex: Bem-vindo ao {{site_name}}!">
+            <small>Pode usar variáveis: {{site_name}}, {{user_name}}, {{current_year}}, etc.</small>
+          </div>
+          
+          <div class="form-row">
+            <label><strong>Corpo do Email (HTML)</strong> <span style="color:red">*</span></label>
+            <textarea name="body_html" rows="20" required style="font-family:monospace;font-size:13px;line-height:1.6"><?php echo htmlspecialchars($editingTemplate['body_html']); ?></textarea>
+            <small>
+              <strong>Variáveis disponíveis:</strong> 
+              <?php 
+                $vars = json_decode($editingTemplate['variables'] ?? '[]', true);
+                if (!empty($vars)) {
+                  foreach ($vars as $v) {
+                    echo '<code>{{' . htmlspecialchars($v) . '}}</code> ';
+                  }
+                }
+              ?>
+              + variáveis globais ({{site_name}}, {{current_year}}, {{site_url}})
+            </small>
+          </div>
+          
+          <div class="form-row">
+            <label>
+              <input type="checkbox" name="is_active" <?php echo $editingTemplate['is_active'] ? 'checked' : ''; ?>>
+              <strong>Template ativo</strong> (apenas templates ativos são usados no envio automático)
+            </label>
+          </div>
+          
+          <div class="form-row" style="margin-top:20px">
+            <button type="submit" name="update_email_template" value="1" class="btn">💾 Guardar Alterações</button>
+            <a href="settings.php?tab=modelos" class="btn" style="background:#6c757d;margin-left:10px">✕ Cancelar</a>
+            <button type="button" onclick="testEmailModal('<?php echo htmlspecialchars($editingTemplate['template_key']); ?>')" 
+                    class="btn" style="background:#17a2b8;margin-left:10px">📧 Enviar Teste</button>
+          </div>
+        </form>
+      </div>
+    <?php endif; ?>
+    
+    <!-- Lista de Templates -->
+    <h3>📧 Modelos de Email Disponíveis</h3>
+    <p class="small" style="margin-bottom:20px">
+      Personalize os emails automáticos enviados pelo sistema. Clique em "Editar" para alterar o assunto e o conteúdo HTML.
+    </p>
+    
+    <?php if (empty($templates)): ?>
+      <div style="padding:40px;background:#f5f5f5;border-radius:4px;text-align:center">
+        <p style="color:#999">Nenhum modelo de email encontrado. Execute o schema.sql para criar os templates iniciais.</p>
+      </div>
+    <?php else: ?>
+      <table style="width:100%;border-collapse:collapse;background:#fff">
+        <thead>
+          <tr style="background:#f8f9fa;border-bottom:2px solid #dee2e6">
+            <th style="padding:12px;text-align:left;font-weight:600">Template</th>
+            <th style="padding:12px;text-align:left;font-weight:600">Assunto</th>
+            <th style="padding:12px;text-align:center;font-weight:600">Tipo</th>
+            <th style="padding:12px;text-align:center;font-weight:600">Estado</th>
+            <th style="padding:12px;text-align:center;font-weight:600">Atualizado</th>
+            <th style="padding:12px;text-align:center;font-weight:600">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($templates as $t): ?>
+            <tr style="border-bottom:1px solid #dee2e6;<?php echo $editingId === $t['id'] ? 'background:#fff9e6' : ''; ?>">
+              <td style="padding:12px">
+                <div style="font-weight:600;margin-bottom:4px"><?php echo htmlspecialchars($t['template_name']); ?></div>
+                <code style="font-size:11px;background:#f4f4f4;padding:2px 6px;border-radius:3px"><?php echo htmlspecialchars($t['template_key']); ?></code>
+              </td>
+              <td style="padding:12px">
+                <span style="color:#666;font-size:14px"><?php echo htmlspecialchars($t['subject']); ?></span>
+              </td>
+              <td style="padding:12px;text-align:center">
+                <?php if ($t['is_system']): ?>
+                  <span style="background:#17a2b8;color:#fff;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">SISTEMA</span>
+                <?php else: ?>
+                  <span style="background:#28a745;color:#fff;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">CUSTOM</span>
+                <?php endif; ?>
+              </td>
+              <td style="padding:12px;text-align:center">
+                <?php if ($t['is_active']): ?>
+                  <span style="color:#28a745;font-weight:600">✓ Ativo</span>
+                <?php else: ?>
+                  <span style="color:#dc3545;font-weight:600">✗ Inativo</span>
+                <?php endif; ?>
+              </td>
+              <td style="padding:12px;text-align:center;color:#666;font-size:13px">
+                <?php echo date('d/m/Y', strtotime($t['updated_at'])); ?><br>
+                <small><?php echo date('H:i', strtotime($t['updated_at'])); ?></small>
+              </td>
+              <td style="padding:12px;text-align:center">
+                <a href="settings.php?tab=modelos&edit=<?php echo $t['id']; ?>" 
+                   class="btn btn-sm" 
+                   style="background:#007bff;padding:6px 12px;font-size:13px">✏️ Editar</a>
+                <button onclick="testEmailModal('<?php echo htmlspecialchars($t['template_key']); ?>')" 
+                        class="btn btn-sm" 
+                        style="background:#17a2b8;padding:6px 12px;font-size:13px;margin-left:4px">📧 Teste</button>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    <?php endif; ?>
+    
+    <!-- Informação sobre Variáveis -->
+    <div style="margin-top:30px;padding:20px;background:#f8f9fa;border-left:4px solid #007bff;border-radius:4px">
+      <h4 style="margin-top:0;color:#007bff">📋 Guia de Variáveis</h4>
+      
+      <div style="margin-bottom:16px">
+        <strong>Variáveis Globais (disponíveis em todos os templates):</strong>
+        <ul style="margin:8px 0;padding-left:20px;line-height:1.8">
+          <li><code>{{site_name}}</code> - Nome da empresa/site</li>
+          <li><code>{{current_year}}</code> - Ano atual (ex: 2025)</li>
+          <li><code>{{site_url}}</code> - URL base do site</li>
+        </ul>
+      </div>
+      
+      <div>
+        <strong>Variáveis Específicas por Template:</strong>
+        <ul style="margin:8px 0;padding-left:20px;line-height:1.8">
+          <li><strong>email_verification:</strong> <code>{{user_name}}</code>, <code>{{verification_link}}</code></li>
+          <li><strong>password_reset:</strong> <code>{{user_name}}</code>, <code>{{reset_link}}</code></li>
+          <li><strong>welcome_email:</strong> <code>{{user_name}}</code>, <code>{{dashboard_link}}</code></li>
+        </ul>
+      </div>
+      
+      <p style="margin:16px 0 0 0;font-size:13px;color:#666">
+        <strong>💡 Dica:</strong> Use um design responsivo e compatível com todos os clientes de email. 
+        Os templates atuais seguem o estilo clean e profissional inspirado em grandes provedores.
+      </p>
     </div>
+    
+    <!-- Modal de Teste de Email -->
+    <div id="testEmailModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center">
+      <div style="background:#fff;padding:30px;border-radius:8px;max-width:500px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
+        <h3 style="margin-top:0">📧 Enviar Email de Teste</h3>
+        <p style="color:#666;margin-bottom:20px">O email será enviado com valores de exemplo para as variáveis.</p>
+        <form method="post">
+          <?php echo csrf_input(); ?>
+          <input type="hidden" name="template_key" id="test_template_key">
+          <div class="form-row">
+            <label><strong>Email de Destino</strong></label>
+            <input type="email" name="test_email_address" required placeholder="seu-email@exemplo.com" style="width:100%">
+          </div>
+          <div class="form-row" style="margin-top:20px">
+            <button type="submit" name="test_email_template" value="1" class="btn" style="background:#28a745">✓ Enviar Teste</button>
+            <button type="button" onclick="closeTestModal()" class="btn" style="background:#6c757d;margin-left:10px">✕ Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <script>
+    function testEmailModal(templateKey) {
+      document.getElementById('test_template_key').value = templateKey;
+      document.getElementById('testEmailModal').style.display = 'flex';
+    }
+    
+    function closeTestModal() {
+      document.getElementById('testEmailModal').style.display = 'none';
+    }
+    
+    // Fechar modal ao clicar fora
+    document.getElementById('testEmailModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeTestModal();
+      }
+    });
+    
+    // Atalho ESC para fechar
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeTestModal();
+      }
+    });
+    </script>
   <?php endif; ?>
   
   <!-- TAB: NOTIFICAÇÕES -->

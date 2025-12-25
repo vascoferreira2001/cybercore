@@ -28,22 +28,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } else {
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
-    $stmt = $pdo->prepare('SELECT id, role, password_hash FROM users WHERE email = ?');
+    $stmt = $pdo->prepare('SELECT id, role, password_hash, email_verified FROM users WHERE email = ?');
     $stmt->execute([$email]);
     $u = $stmt->fetch();
     if ($u && password_verify($password, $u['password_hash'])) {
-      $isException = in_array($u['role'], $maintenanceExceptions, true);
-      if ($maintenanceDisabled && !$isException) {
-        $error = $maintenanceMessage ?: 'Login temporariamente desativado devido a manutenção.';
-        $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login_blocked','Login bloqueado por manutenção']);
+      // Verificar se o email foi verificado (exceto para staff)
+      $isStaff = in_array($u['role'], ['Gestor', 'Suporte ao Cliente', 'Suporte Técnica', 'Suporte Financeira'], true);
+      if (!$isStaff && !$u['email_verified']) {
+        $error = 'Por favor, verifique o seu email antes de fazer login. Verifique a sua caixa de entrada e pasta de spam.';
+        $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login_blocked','Login bloqueado - email não verificado']);
       } else {
-        session_regenerate_id(true);
-        $_SESSION['user_id'] = $u['id'];
-        $_SESSION['role'] = $u['role'];
-        $_SESSION['login_attempts'] = []; // reset attempts on success
-        $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login','User logged in']);
-        header('Location: dashboard.php');
-        exit;
+        $isException = in_array($u['role'], $maintenanceExceptions, true);
+        if ($maintenanceDisabled && !$isException) {
+          $error = $maintenanceMessage ?: 'Login temporariamente desativado devido a manutenção.';
+          $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login_blocked','Login bloqueado por manutenção']);
+        } else {
+          session_regenerate_id(true);
+          $_SESSION['user_id'] = $u['id'];
+          $_SESSION['role'] = $u['role'];
+          $_SESSION['login_attempts'] = []; // reset attempts on success
+          $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$u['id'],'login','User logged in']);
+          header('Location: dashboard.php');
+          exit;
+        }
       }
     } else {
       $attempts[] = $now;

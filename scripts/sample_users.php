@@ -17,7 +17,8 @@ foreach($users as $u){
   $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?'); $stmt->execute([$u['email']]);
   if ($stmt->fetch()) continue;
   $hash = password_hash($pwd, PASSWORD_DEFAULT);
-  $ins = $pdo->prepare('INSERT INTO users (first_name,last_name,email,password_hash,role) VALUES (?,?,?,?,?)');
+  // Marcar utilizadores de teste como verificados para permitir login imediato
+  $ins = $pdo->prepare('INSERT INTO users (first_name,last_name,email,password_hash,role,email_verified) VALUES (?,?,?,?,?,1)');
   $ins->execute([$u['first'],$u['last'],$u['email'],$hash,$u['role']]);
 }
 echo "Sample users created (password: $pwd)";

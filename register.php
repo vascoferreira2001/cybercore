@@ -5,6 +5,8 @@ require_once __DIR__ . '/inc/csrf.php';
 require_once __DIR__ . '/inc/settings.php';
 require_once __DIR__ . '/inc/maintenance.php';
 require_once __DIR__ . '/inc/debug.php';
+require_once __DIR__ . '/inc/mailer.php';
+require_once __DIR__ . '/inc/email_templates.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 $pdo = getDB();
@@ -50,6 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       } else {
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $role = 'Cliente';
+        
+        // Gerar token de verificação de email
+        $verificationToken = bin2hex(random_bytes(32));
+        $verificationExpires = date('Y-m-d H:i:s', time() + 86400); // 24 horas
 
         // Obter colunas existentes na tabela para compatibilidade com esquemas antigos
         $colsStmt = $pdo->query('SHOW COLUMNS FROM users');
@@ -70,6 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           'password_hash' => $hash,
           'role'          => $role,
           'receive_news'  => $receive_news,
+          'email_verified' => 0,
+          'email_verification_token' => $verificationToken,
+          'email_verification_expires' => $verificationExpires,
         ];
 
         $insertCols = [];
@@ -91,9 +100,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ins->execute($insertVals);
 
         $userId = $pdo->lastInsertId();
-        $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$userId,'registration','User registered']);
-        $_SESSION['user_id'] = $userId;
-        header('Location: dashboard.php');
+        $pdo->prepare('INSERT INTO logs (user_id,type,message) VALUES (?,?,?)')->execute([$userId,'registration','User registered - email verification pending']);
+        
+        // Enviar email de verificação usando template
+        $verificationLink = rtrim(SITE_URL, '/') . '/verify_email.php?token=' . $verificationToken;
+        
+        $emailSent = sendTemplatedEmail($pdo, 'email_verification', $email, $first, [
+          'user_name' => $first,
+          'verification_link' => $verificationLink
+        ]);
+        
+        if (!$emailSent) {
+          logError('Falha ao enviar email de verificação', ['user_id' => $userId, 'email' => $email]);
+        }
+        
+        // Redirecionar para página de sucesso sem login automático
+        $_SESSION['registration_success'] = true;
+        $_SESSION['registration_email'] = $email;
+        header('Location: registration_success.php');
         exit;
       }
     }
