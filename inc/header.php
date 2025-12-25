@@ -16,6 +16,7 @@ $siteLogoUrl = '';
 $siteLogoPath = '';
 $faviconUrl = '';
 $faviconPath = '';
+$maintenanceMenusHidden = [];
 
 try {
   if (isset($pdo) || function_exists('getDB')) {
@@ -32,10 +33,25 @@ try {
         $faviconUrl = (strpos($favicon, '/') === 0) ? $favicon : '/' . $favicon;
         $faviconPath = $_SERVER['DOCUMENT_ROOT'] . $faviconUrl;
       }
+      
+      // Carregar menus ocultos durante manutenção (baseado em cargo)
+      $maintenanceDisabled = getSetting($pdo, 'maintenance_disable_login', '0') === '1';
+      if ($maintenanceDisabled) {
+        $hideMenusByRole = json_decode(getSetting($pdo, 'maintenance_hide_menus_by_role', '{}'), true) ?: [];
+        $currentUserRole = $cu['role'] ?? null;
+        if ($currentUserRole && isset($hideMenusByRole[$currentUserRole])) {
+          $maintenanceMenusHidden = $hideMenusByRole[$currentUserRole];
+        }
+      }
     }
   }
 } catch (Exception $e) {
   // Silenciosamente falha - logo e favicon vazios
+}
+
+// Função helper para verificar se um menu deve ser oculto
+function isMenuHidden($menuKey, $hiddenMenus) {
+  return in_array($menuKey, $hiddenMenus, true);
 }
 ?>
 <!doctype html>
@@ -72,21 +88,28 @@ try {
       <?php if($cu && in_array($cu['role'], ['Gestor','Suporte ao Cliente','Suporte Técnica','Suporte Financeira'])): ?>
 
         <!-- Painel -->
+        <?php if (!isMenuHidden('painel', $maintenanceMenusHidden)): ?>
         <a href="/admin/dashboard.php" class="nav-item">
           <span class="icon">📊</span> Painel
         </a>
+        <?php endif; ?>
 
         <!-- Clientes -->
+        <?php if (!isMenuHidden('clientes', $maintenanceMenusHidden)): ?>
         <a href="/admin/customers.php" class="nav-item">
           <span class="icon">👥</span> Clientes
         </a>
+        <?php endif; ?>
 
         <!-- Tarefas -->
+        <?php if (!isMenuHidden('tarefas', $maintenanceMenusHidden)): ?>
         <a href="/admin/tasks.php" class="nav-item">
           <span class="icon">✓</span> Tarefas
         </a>
+        <?php endif; ?>
 
         <!-- Serviços (submenu) -->
+        <?php if (!isMenuHidden('servicos', $maintenanceMenusHidden)): ?>
         <div class="nav-group">
           <a href="#" class="nav-item submenu-toggle" data-submenu="services">
             <span class="icon">🛠️</span> Serviços <span class="arrow">▼</span>
@@ -98,23 +121,31 @@ try {
             <a href="/admin/contracts.php" class="nav-item-sub">Contratos</a>
           </div>
         </div>
+        <?php endif; ?>
 
         <!-- Orçamentos -->
+        <?php if (!isMenuHidden('orcamentos', $maintenanceMenusHidden)): ?>
         <a href="/admin/quotes.php" class="nav-item">
           <span class="icon">📋</span> Orçamentos
         </a>
+        <?php endif; ?>
 
         <!-- Notas (Notas Privadas) -->
+        <?php if (!isMenuHidden('notas', $maintenanceMenusHidden)): ?>
         <a href="/admin/notes.php" class="nav-item">
           <span class="icon">📝</span> Notas
         </a>
+        <?php endif; ?>
 
         <!-- Live Chat - Equipa -->
+        <?php if (!isMenuHidden('live_chat', $maintenanceMenusHidden)): ?>
         <a href="/admin/live-chat.php" class="nav-item">
           <span class="icon">💬</span> Live Chat
         </a>
+        <?php endif; ?>
 
         <!-- Equipa (submenu) -->
+        <?php if (!isMenuHidden('equipa', $maintenanceMenusHidden)): ?>
         <div class="nav-group">
           <a href="#" class="nav-item submenu-toggle" data-submenu="team">
             <span class="icon">👔</span> Equipa <span class="arrow">▼</span>
@@ -125,8 +156,10 @@ try {
             <a href="/admin/licenses.php" class="nav-item-sub">Licenças</a>
           </div>
         </div>
+        <?php endif; ?>
 
         <!-- Suporte ao Cliente (submenu) -->
+        <?php if (!isMenuHidden('tickets', $maintenanceMenusHidden)): ?>
         <div class="nav-group">
           <a href="#" class="nav-item submenu-toggle" data-submenu="customer-support">
             <span class="icon">🎧</span> Suporte ao Cliente <span class="arrow">▼</span>
@@ -138,9 +171,10 @@ try {
             <a href="/admin/documents.php" class="nav-item-sub">Documentos</a>
           </div>
         </div>
+        <?php endif; ?>
 
         <!-- Suporte Financeiro (submenu) - Apenas Gestor e Suporte Financeira -->
-        <?php if($cu && in_array($cu['role'], ['Gestor','Suporte Financeira'])): ?>
+        <?php if($cu && in_array($cu['role'], ['Gestor','Suporte Financeira']) && !isMenuHidden('despesas', $maintenanceMenusHidden)): ?>
         <div class="nav-group">
           <a href="#" class="nav-item submenu-toggle" data-submenu="finance">
             <span class="icon">💰</span> Suporte Financeiro <span class="arrow">▼</span>
@@ -167,21 +201,31 @@ try {
 
       <!-- Menu para Cliente (visão simples) -->
       <?php else: ?>
+        <?php if (!isMenuHidden('painel', $maintenanceMenusHidden)): ?>
         <a href="/dashboard.php" class="nav-item">
           <span class="icon">📊</span> Painel
         </a>
+        <?php endif; ?>
+        <?php if (!isMenuHidden('suporte', $maintenanceMenusHidden)): ?>
         <a href="/support.php" class="nav-item">
           <span class="icon">🎧</span> Suporte
         </a>
+        <?php endif; ?>
+        <?php if (!isMenuHidden('dominios', $maintenanceMenusHidden)): ?>
         <a href="/domains.php" class="nav-item">
           <span class="icon">🌐</span> Domínios
         </a>
+        <?php endif; ?>
+        <?php if (!isMenuHidden('financeiro', $maintenanceMenusHidden)): ?>
         <a href="/finance.php" class="nav-item">
           <span class="icon">💰</span> Financeiro
         </a>
+        <?php endif; ?>
+        <?php if (!isMenuHidden('logs', $maintenanceMenusHidden)): ?>
         <a href="/logs.php" class="nav-item">
           <span class="icon">📋</span> Logs
         </a>
+        <?php endif; ?>
       <?php endif; ?>
     </nav>
     <div class="logout"><a href="/logout.php">Logout</a></div>
