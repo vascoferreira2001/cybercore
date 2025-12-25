@@ -132,66 +132,384 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Registo - CyberCore</title>
+  <title>Criar Conta - CyberCore</title>
   <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    :root {
+      --primary: #123659;
+      --primary-light: #1e4a7a;
+      --bg-light: #f4f5f7;
+      --text-dark: #1e2e3e;
+      --text-gray: #5a6c7d;
+      --border: #e8e9ed;
+      --success: #32a852;
+      --error: #c41c3b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      color: var(--text-dark);
+      background: var(--bg-light);
+    }
+
+    .register-logo {
+      text-align: center;
+      padding: 20px 0;
+      margin-bottom: 0;
+    }
+
+    .register-container {
+      min-height: 100vh;
+      padding: 20px;
+      padding-top: 20px;
+    }
+
+    .register-content {
+      max-width: 500px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 3px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .register-header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .register-header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .register-body {
+      padding: 32px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group.form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group.form-row-2 > * {
+      margin-bottom: 0;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+      text-transform: capitalize;
+    }
+
+    .form-group label .required {
+      color: var(--error);
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-size: 13px;
+      color: var(--text-dark);
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #ffffff;
+    }
+
+    .form-group input::placeholder,
+    .form-group select::placeholder {
+      color: #b0b8c1;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(18, 54, 89, 0.08);
+    }
+
+    .form-group.checkbox-group {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: auto;
+      height: 16px;
+      margin-right: 8px;
+      margin-top: 2px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+
+    .checkbox-item label {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.5;
+      cursor: pointer;
+      color: var(--text-gray);
+    }
+
+    .checkbox-item a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .checkbox-item a:hover {
+      text-decoration: underline;
+    }
+
+    .form-actions {
+      margin-top: 24px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 10px;
+      background: var(--success);
+      color: #ffffff;
+      border: none;
+      border-radius: 3px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #2a9d47;
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-gray);
+    }
+
+    .login-link a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+
+    .error-message {
+      background: #ffefef;
+      border: 1px solid #ffcdd2;
+      color: var(--error);
+      padding: 11px 13px;
+      border-radius: 3px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .info-text {
+      font-size: 11px;
+      color: var(--text-gray);
+      margin-top: 12px;
+      line-height: 1.5;
+      background: #f9f9f9;
+      padding: 10px 12px;
+      border-radius: 3px;
+      border-left: 3px solid var(--border);
+    }
+
+    @media (max-width: 640px) {
+      .register-header,
+      .register-body {
+        padding: 20px;
+      }
+
+      .form-group.form-row-2 {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+    }
+  </style>
 </head>
 <body>
 <?php if ($maintenanceDisabled): ?>
   <?php renderMaintenanceModal($maintenanceMessage ?: 'Criação de conta temporariamente desativada.', ['disable_form' => true]); ?>
 <?php endif; ?>
-<main style="max-width:800px;margin:24px auto">
-  <div class="card">
-    <h2>Criação de Conta</h2>
-    <?php if(!empty($errors)): ?><div class="card" style="background:#ffefef;color:#900"><?php echo implode('<br>',$errors); ?></div><?php endif; ?>
-    <form method="post" id="registerForm">
-      <?php echo csrf_input(); ?>
-      <div class="form-row"><label>Nome (Obrigatório)</label><input type="text" name="first_name" required></div>
-      <div class="form-row"><label>Apelido (Obrigatório)</label><input type="text" name="last_name" required></div>
-      <div class="form-row"><label>Email (Obrigatório)</label><input type="email" name="email" required></div>
-      <div class="form-row"><label>País</label><input type="text" name="country"></div>
-      <div class="form-row"><label>Morada</label><input type="text" name="address"></div>
-      <div class="form-row"><label>Cidade</label><input type="text" name="city"></div>
-      <div class="form-row"><label>Código Postal (PT) 1234-567</label><input type="text" name="postal_code" pattern="\d{4}-\d{3}" required></div>
-      <div class="form-row"><label>Telemóvel</label><input type="text" name="phone"></div>
-      <div class="form-row"><label>NIF (Obrigatório)</label><input type="text" name="nif" pattern="\d{9}" required></div>
-      <div class="form-row"><label>Tipo de Entidade</label>
-        <select name="entity_type"><option>Singular</option><option>Coletiva</option></select>
-      </div>
-      <div class="form-row" id="companyRow" style="display:none"><label>Nome da Empresa (Obrigatório para Entidade Coletiva)</label><input type="text" name="company_name" id="company_name"></div>
-      <div class="form-row"><label>Palavra Passe</label><input type="password" id="password" name="password" required></div>
-      <div class="form-row"><label><input type="checkbox" name="receive_news"> Desejo receber newsletters</label></div>
-      <div class="form-row"><label><input type="checkbox" required> Declaro que li e aceito a Política de Privacidade</label></div>
-      <div class="form-row"><label><input type="checkbox" required> Confirmo que tenho mais de 18 anos</label></div>
-      <div class="form-row"><label><input type="checkbox" required> Aceito as Condições de Serviço</label></div>
-      <div class="form-row small">Ao submeter confirmo a veracidade dos dados para efeitos de faturação.</div>
-      <div class="form-row"><button class="btn">Criar Conta</button></div>
-    </form>
-    <div class="small">Já tem conta? <a href="login.php">Entrar</a></div>
+
+<div class="register-logo">
+  <svg width="100" height="35" viewBox="0 0 100 35" fill="none">
+    <text x="0" y="24" font-family="Arial, sans-serif" font-size="20" font-weight="600" fill="#123659">CyberCore</text>
+  </svg>
+</div>
+
+<div class="register-container">
+  <div class="register-content">
+    <div class="register-header">
+      <h1>Criar Conta</h1>
+    </div>
+
+    <div class="register-body">
+      <?php if(!empty($errors)): ?>
+        <div class="error-message">
+          <?php echo implode('<br>', $errors); ?>
+        </div>
+      <?php endif; ?>
+
+      <form method="post" id="registerForm">
+        <?php echo csrf_input(); ?>
+
+        <!-- Identificação -->
+        <div class="form-group form-row-2">
+          <div>
+            <label>Nome <span class="required">*</span></label>
+            <input type="text" name="first_name" required value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" placeholder="">
+          </div>
+          <div>
+            <label>Sobrenome <span class="required">*</span></label>
+            <input type="text" name="last_name" required value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" placeholder="">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>E-mail <span class="required">*</span></label>
+          <input type="email" name="email" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" placeholder="">
+        </div>
+
+        <div class="form-group">
+          <label>NIF <span class="required">*</span></label>
+          <input type="text" name="nif" pattern="\d{9}" placeholder="123456789" required value="<?php echo htmlspecialchars($_POST['nif'] ?? ''); ?>">
+        </div>
+
+        <!-- Morada -->
+        <div class="form-group">
+          <label>País</label>
+          <input type="text" name="country" value="<?php echo htmlspecialchars($_POST['country'] ?? ''); ?>" placeholder="">
+        </div>
+
+        <div class="form-group">
+          <label>Morada</label>
+          <input type="text" name="address" value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>" placeholder="">
+        </div>
+
+        <div class="form-group form-row-2">
+          <div>
+            <label>Cidade</label>
+            <input type="text" name="city" value="<?php echo htmlspecialchars($_POST['city'] ?? ''); ?>" placeholder="">
+          </div>
+          <div>
+            <label>Código Postal <span class="required">*</span></label>
+            <input type="text" name="postal_code" pattern="\d{4}-\d{3}" placeholder="1234-567" required value="<?php echo htmlspecialchars($_POST['postal_code'] ?? ''); ?>">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Telemóvel</label>
+          <input type="text" name="phone" value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>" placeholder="">
+        </div>
+
+        <!-- Tipo de Entidade -->
+        <div class="form-group">
+          <label>Tipo de Entidade <span class="required">*</span></label>
+          <select name="entity_type" required onchange="syncCompanyField()">
+            <option value="Singular" <?php echo ($_POST['entity_type'] ?? 'Singular') === 'Singular' ? 'selected' : ''; ?>>Pessoa Singular</option>
+            <option value="Coletiva" <?php echo ($_POST['entity_type'] ?? '') === 'Coletiva' ? 'selected' : ''; ?>>Pessoa Coletiva</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="companyRow" style="display: none;">
+          <label>Nome da Empresa <span class="required">*</span></label>
+          <input type="text" name="company_name" id="company_name" value="<?php echo htmlspecialchars($_POST['company_name'] ?? ''); ?>" placeholder="">
+        </div>
+
+        <!-- Segurança -->
+        <div class="form-group">
+          <label>Palavra-passe <span class="required">*</span></label>
+          <input type="password" id="password" name="password" required minlength="8" placeholder="">
+        </div>
+
+        <!-- Consentimentos -->
+        <div class="form-group checkbox-group">
+          <div class="checkbox-item">
+            <input type="checkbox" id="terms" name="terms" required>
+            <label for="terms">
+              Aceito os <a href="#" target="_blank">Termos e condições</a> <span class="required">*</span>
+            </label>
+          </div>
+
+          <div class="checkbox-item">
+            <input type="checkbox" id="newsletter" name="receive_news">
+            <label for="newsletter">
+              Aceito receber e-mails relativos às novidades e ofertas comerciais
+            </label>
+          </div>
+        </div>
+
+        <div class="info-text">
+          A OVH SAS é responsável pelo tratamento dos seus dados pessoais. Confirmo a veracidade dos dados para efeitos de faturação.
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Criar uma conta</button>
+        </div>
+
+        <div class="login-link">
+          Já tem conta? <a href="login.php">Faça login</a>
+        </div>
+      </form>
+    </div>
   </div>
-</main>
-<script src="assets/js/app.js"></script>
+</div>
+
 <script>
-  (function(){
-    var select = document.querySelector('select[name="entity_type"]');
+  function syncCompanyField() {
+    var entityType = document.querySelector('select[name="entity_type"]').value;
     var companyRow = document.getElementById('companyRow');
     var companyInput = document.getElementById('company_name');
-    function syncCompanyField(){
-      var isCollective = select && select.value === 'Coletiva';
-      if (companyRow) companyRow.style.display = isCollective ? 'block' : 'none';
-      if (companyInput) {
-        if (isCollective) {
-          companyInput.setAttribute('required','required');
-        } else {
-          companyInput.removeAttribute('required');
-          companyInput.value = '';
-        }
-      }
+    
+    if (entityType === 'Coletiva') {
+      companyRow.style.display = 'block';
+      companyInput.setAttribute('required', 'required');
+    } else {
+      companyRow.style.display = 'none';
+      companyInput.removeAttribute('required');
+      companyInput.value = '';
     }
-    if (select) {
-      select.addEventListener('change', syncCompanyField);
-      syncCompanyField();
-    }
-  })();
+  }
+  
+  syncCompanyField();
 </script>
 </body>
 </html>
