@@ -36,7 +36,8 @@ Key sections:
 - Display name chooses company when available, else first+last name.
 
 ## Usage
-- Enable dashboard layout on a page by defining `DASHBOARD_LAYOUT` before including `inc/header.php`.
+- Single dashboard entry: `/dashboard.php` for all roles. Admin route `/admin/dashboard.php` redirects to the main dashboard.
+- Enable dashboard layout on pages that should use the shell by defining `DASHBOARD_LAYOUT` before including `inc/header.php`.
 
 ```php
 <?php define('DASHBOARD_LAYOUT', true); ?>
@@ -54,3 +55,4 @@ Key sections:
 - Active menu indicators, collapsible groups persisted with localStorage.
 - Notifications dropdown panel.
 - Search result categories and deep links.
+ - Role/permission-driven card visibility from a central config.

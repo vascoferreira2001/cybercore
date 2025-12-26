@@ -78,7 +78,7 @@ try {
       <?php if($cu && in_array($cu['role'], ['Gestor','Suporte ao Cliente','Suporte Técnica','Suporte Financeira'])): ?>
 
         <!-- Painel -->
-        <a href="/admin/dashboard.php" class="nav-item">
+        <a href="/dashboard.php" class="nav-item">
           <span class="icon">📊</span> Painel
         </a>
 
