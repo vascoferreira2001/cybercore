@@ -3,11 +3,24 @@ define('DASHBOARD_LAYOUT', true);
 require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/csrf.php';
+require_once __DIR__ . '/inc/fiscal_requests.php';
 
+requireLogin();
 checkRole(['Cliente','Suporte ao Cliente','Suporte Financeiro','Suporte Técnico','Gestor']);
 $cu = currentUser();
 $pdo = getDB();
 $profileUrl = '/profile.php';
+
+// Carregar dados completos do utilizador (incluindo dados fiscais)
+$stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
+$stmt->execute([$cu['id']]);
+$userData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Carregar histórico de solicitações fiscais (se cliente)
+$fiscalRequests = [];
+if ($cu['role'] === 'Cliente') {
+    $fiscalRequests = getUserFiscalRequests($pdo, $cu['id']);
+}
 $clientId = 'CYC#' . str_pad($cu['id'], 5, '0', STR_PAD_LEFT);
 $userDisplayName = trim($cu['first_name'] . ' ' . $cu['last_name']) ?: $cu['email'];
 ?>
@@ -226,23 +239,60 @@ $userDisplayName = trim($cu['first_name'] . ' ' . $cu['last_name']) ?: $cu['emai
           <form class="form-grid" id="formFiscal" novalidate>
             <div class="form-field">
               <label for="entityType">Tipo de entidade</label>
-              <input type="text" id="entityType" name="entityType" readonly aria-readonly="true">
+              <input type="text" id="entityType" name="entityType" readonly aria-readonly="true" value="<?php echo htmlspecialchars($userData['entity_type'] === 'Singular' ? 'Pessoa Singular' : 'Pessoa Coletiva'); ?>">
               <div class="field-lock-note">Campo bloqueado</div>
             </div>
             <div class="form-field">
               <label for="companyName">Nome da empresa</label>
-              <input type="text" id="companyName" name="companyName" readonly aria-readonly="true">
+              <input type="text" id="companyName" name="companyName" readonly aria-readonly="true" value="<?php echo htmlspecialchars($userData['company_name'] ?? '—'); ?>">
               <div class="field-lock-note">Campo bloqueado</div>
             </div>
             <div class="form-field">
               <label for="taxId">NIF</label>
-              <input type="text" id="taxId" name="taxId" readonly aria-readonly="true">
+              <input type="text" id="taxId" name="taxId" readonly aria-readonly="true" value="<?php echo htmlspecialchars($userData['nif']); ?>">
               <div class="field-lock-note">Campo bloqueado</div>
             </div>
-            <div class="form-actions">
-              <button class="btn danger" type="button" id="requestFiscalChangeBtn">Solicitar alteração de dados fiscais</button>
-            </div>
-          </form>
+            
+            <?php if ($cu['role'] === 'Cliente'): ?>
+              <div class="form-field wide">
+                <div class="info-banner" style="background:#e3f2fd;border:1px solid #90caf9;padding:12px;border-radius:6px;margin:12px 0">
+                  <strong>ℹ️ Dados Fiscais Protegidos</strong><br>
+                  <span style="font-size:13px;color:#555">Para alterar NIF, tipo de entidade ou nome da empresa, por favor submeta uma solicitação abaixo. Será revogada por um gestor em breve.</span>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn danger" type="button" id="requestFiscalChangeBtn">Solicitar alteração de dados fiscais</button>
+              </div>
+              
+              <?php if (!empty($fiscalRequests)): ?>
+                <div class="form-field wide">
+                  <h3 style="margin:20px 0 12px 0;font-size:15px">Histórico de Solicitações</h3>
+                  <div style="max-height:300px;overflow-y:auto">
+                    <?php foreach ($fiscalRequests as $req): ?>
+                      <div style="padding:12px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;background:#f9f9f9">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                          <strong>NIF: <?php echo htmlspecialchars($req['new_nif']); ?></strong>
+                          <span class="badge badge-<?php echo $req['status']; ?>" style="font-size:11px;padding:4px 8px;border-radius:4px;background:<?php 
+                            echo $req['status'] === 'approved' ? '#4caf50' : ($req['status'] === 'rejected' ? '#f44336' : '#ff9800');
+                          ?>;color:#fff">
+                            <?php echo ucfirst($req['status']); ?>
+                          </span>
+                        </div>
+                        <div style="font-size:12px;color:#666">
+                          Solicitado: <?php echo date('d/m/Y H:i', strtotime($req['requested_at'])); ?><br>
+                          Motivo: <?php echo htmlspecialchars(substr($req['reason'], 0, 100)); ?>...
+                        </div>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
+              <?php endif; ?>
+            <?php elseif (in_array($cu['role'], ['Gestor', 'Suporte Financeiro'])): ?>
+              <div class="form-actions">
+                <a href="/admin/fiscal-approvals.php" class="btn primary">Ver solicitações pendentes</a>
+              </div>
+            <?php endif; ?>
+            
         </div>
       </section>
     </main>
@@ -253,6 +303,156 @@ $userDisplayName = trim($cu['first_name'] . ' ' . $cu['last_name']) ?: $cu['emai
     </footer>
   </div>
 
-  <script src="/assets/js/pages/profile.js"></script>
-</body>
-</html>
+  <!-- Modal: Solicitar Alteração Fiscal -->
+  <div id="fiscalChangeModal" class="modal" style="display:none;z-index:1000">
+    <div class="modal-overlay" id="modalOverlay"></div>
+    <div class="modal-content" style="max-width:500px">
+      <div class="modal-header">
+        <h2>Solicitar Alteração de Dados Fiscais</h2>
+        <button class="modal-close" type="button" id="closeFiscalModal" aria-label="Fechar">&times;</button>
+      </div>
+      <form id="fiscalRequestForm" novalidate>
+        <?php echo csrf_input(); ?>
+        <input type="hidden" name="action" value="submit">
+        
+        <div class="form-field">
+          <label for="newNIF">Novo NIF *</label>
+          <input type="text" id="newNIF" name="newNIF" placeholder="Exemplo: 123456789" required>
+          <div class="field-hint">Será validado automaticamente</div>
+          <div class="field-error" data-error-for="newNIF"></div>
+        </div>
+        
+        <div class="form-field">
+          <label for="newEntityType">Tipo de Entidade *</label>
+          <select id="newEntityType" name="newEntityType" required>
+            <option value="">— Selecionar —</option>
+            <option value="Singular">Pessoa Singular</option>
+            <option value="Coletiva">Pessoa Coletiva</option>
+          </select>
+          <div class="field-error" data-error-for="newEntityType"></div>
+        </div>
+        
+        <div class="form-field">
+          <label for="newCompanyName">Nome da Empresa (se aplicável)</label>
+          <input type="text" id="newCompanyName" name="newCompanyName" placeholder="Opcional">
+          <div class="field-hint">Obrigatório se tipo for Pessoa Coletiva</div>
+          <div class="field-error" data-error-for="newCompanyName"></div>
+        </div>
+        
+        <div class="form-field">
+          <label for="reason">Motivo da Alteração *</label>
+          <textarea id="reason" name="reason" rows="4" placeholder="Explique detalhadamente o motivo desta alteração..." required></textarea>
+          <div class="field-hint">Mínimo 10 caracteres</div>
+          <div class="field-error" data-error-for="reason"></div>
+        </div>
+        
+        <div class="form-actions" style="gap:10px">
+          <button type="button" class="btn secondary" id="cancelFiscalBtn">Cancelar</button>
+          <button type="submit" class="btn primary">Enviar Solicitação</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CSS para Modal -->
+  <style>
+    .modal {
+      position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:1000
+    }
+    .modal-overlay {
+      position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);cursor:pointer
+    }
+    .modal-content {
+      position:relative;background:#fff;border-radius:12px;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-width:600px;width:90%;max-height:90vh;overflow-y:auto
+    }
+    .modal-header {
+      display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid #eee;padding-bottom:12px
+    }
+    .modal-header h2 {
+      margin:0;font-size:18px;font-weight:600
+    }
+    .modal-close {
+      background:none;border:none;font-size:28px;color:#999;cursor:pointer;padding:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center
+    }
+    .modal-close:hover {
+      color:#333
+    }
+  </style>
+
+  <!-- JavaScript para Modal e Submissão -->
+  <script>
+    (function() {
+      const modal = document.getElementById('fiscalChangeModal');
+      const modalOverlay = document.getElementById('modalOverlay');
+      const openBtn = document.getElementById('requestFiscalChangeBtn');
+      const closeBtn = document.getElementById('closeFiscalModal');
+      const cancelBtn = document.getElementById('cancelFiscalBtn');
+      const form = document.getElementById('fiscalRequestForm');
+
+      if (!openBtn) return;
+
+      // Abrir modal
+      openBtn.addEventListener('click', () => {
+        modal.style.display = 'flex';
+      });
+
+      // Fechar modal
+      const closeModal = () => {
+        modal.style.display = 'none';
+        form.reset();
+        clearErrors();
+      };
+
+      closeBtn?.addEventListener('click', closeModal);
+      cancelBtn?.addEventListener('click', closeModal);
+      modalOverlay?.addEventListener('click', closeModal);
+
+      // Limpar erros
+      const clearErrors = () => {
+        document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+      };
+
+      // Submeter formulário
+      form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearErrors();
+
+        const formData = new FormData(form);
+        formData.append('action', 'submit');
+
+        try {
+          const res = await fetch('/inc/api/fiscal-requests.php', {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await res.json();
+
+          if (data.success) {
+            showToast(data.message, 'success');
+            closeModal();
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            showToast(data.message || 'Erro ao enviar solicitação', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Erro ao enviar solicitação', 'error');
+        }
+      });
+
+      // Toast simples
+      function showToast(msg, type = 'info') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:6px;
+          background:${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
+          color:#fff;font-size:14px;z-index:2000;box-shadow:0 4px 12px rgba(0,0,0,0.15)
+        `;
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      }
+    })();
+  </script>
+

@@ -89,6 +89,13 @@ function getMenuItemsByRole($role) {
             'roles' => ['Gestor', 'Suporte Financeiro']
         ],
         [
+            'url' => '/admin/fiscal-approvals.php',
+            'label' => 'Aprovações Fiscais',
+            'icon' => 'check-square',
+            'key' => 'fiscal-approvals',
+            'roles' => ['Gestor', 'Suporte Financeiro']
+        ],
+        [
             'url' => '/admin/tickets.php',
             'label' => 'Tickets',
             'icon' => 'message-square',

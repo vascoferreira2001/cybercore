@@ -207,6 +207,32 @@ INSERT IGNORE INTO changelog (version, title, description, release_date) VALUES
 ('1.0.0', 'Lançamento Inicial', 'Sistema completo de gestão de clientes com dashboard, serviços, faturação e suporte', '2025-12-25 00:00:00'),
 ('1.1.0', 'Sistema de Roles e Permissões', 'Implementado sistema completo de roles (Cliente, Gestor, Suporte) com dashboard dinâmico, sidebar inteligente e proteção de rotas', '2025-12-26 00:00:00');
 
+-- Tabela de solicitações de mudança de dados fiscais
+-- Implementa fluxo de aprovação para alterações de NIF, tipo de entidade e nome da empresa
+CREATE TABLE IF NOT EXISTS fiscal_change_requests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  old_nif VARCHAR(20) NOT NULL,
+  new_nif VARCHAR(20) NOT NULL,
+  old_entity_type ENUM('Singular','Coletiva') NOT NULL,
+  new_entity_type ENUM('Singular','Coletiva') NOT NULL,
+  old_company_name VARCHAR(255) NULL,
+  new_company_name VARCHAR(255) NULL,
+  reason TEXT NOT NULL COMMENT 'Motivo da alteração solicitada',
+  status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  reviewed_by INT NULL COMMENT 'ID do Gestor/Suporte Financeiro que aprovou/rejeitou',
+  reviewed_at TIMESTAMP NULL,
+  decision_reason VARCHAR(500) NULL COMMENT 'Motivo da decisão (se rejeitado)',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_user (user_id),
+  INDEX idx_status (status),
+  INDEX idx_requested (requested_at),
+  INDEX idx_reviewed (reviewed_by)
+);
+
 -- Tabela de notificações
 CREATE TABLE IF NOT EXISTS notifications (
   id INT AUTO_INCREMENT PRIMARY KEY,
