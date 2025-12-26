@@ -4,6 +4,7 @@ require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/csrf.php';
 require_once __DIR__ . '/inc/settings.php';
 require_once __DIR__ . '/inc/debug.php';
+require_once __DIR__ . '/inc/auth_theme.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -13,10 +14,7 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $pdo = getDB();
-$siteLogo = getSetting($pdo, 'site_logo');
-$loginBg = getSetting($pdo, 'login_background');
-$bgUrl = ($loginBg && getAssetPath($loginBg) && file_exists(getAssetPath($loginBg))) ? htmlspecialchars(getAssetUrl($loginBg)) : '';
-$backgroundStyle = $bgUrl ? 'background: url(' . $bgUrl . ') center/cover no-repeat fixed, #0f172a;' : '';
+$theme = loadAuthTheme($pdo);
 $errors = [];
 $maxAttempts = 5;
 $lockoutTime = 600;
@@ -41,13 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $attempts = $cacheAvailable ? (apcu_fetch($key) ?? 0) : 0;
     
     if (empty($errors)) {
-      // Permitir login com email OU identificador (CYC#...)
       if (strpos($emailOrId, 'CYC#') === 0) {
-        // Login com identificador
         $stmt = $pdo->prepare('SELECT * FROM users WHERE identifier = ?');
         $stmt->execute([$emailOrId]);
       } else {
-        // Login com email
         $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?');
         $stmt->execute([$emailOrId]);
       }
@@ -81,7 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 }
-?><!doctype html>
+?>
+<!doctype html>
 <html lang="pt-PT">
 <head>
   <meta charset="utf-8">
@@ -89,307 +85,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Login - CyberCore</title>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0f172a;
-      --panel: #0b1224;
-      --muted: #cdd5e1;
-      --text: #e2e8f0;
-      --accent: #2563eb;
-      --accent-2: #38bdf8;
-      --border: rgba(255, 255, 255, 0.08);
-      --danger: #f97316;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.12), transparent 30%),
-                  radial-gradient(circle at 80% 0%, rgba(37, 99, 235, 0.16), transparent 32%),
-                  radial-gradient(circle at 40% 80%, rgba(26, 86, 219, 0.12), transparent 35%),
-                  var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 32px 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .shell {
-      width: 100%;
-      max-width: 1080px;
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 28px;
-      background: rgba(11, 18, 36, 0.92);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
-      overflow: hidden;
-      backdrop-filter: blur(14px);
-    }
-
-    .hero {
-      padding: 34px;
-      background: linear-gradient(145deg, rgba(37, 99, 235, 0.12), rgba(11, 18, 36, 0.85));
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .hero-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .hero-logo svg { height: 40px; width: auto; }
-
-    .hero-title {
-      font-size: 30px;
-      font-weight: 700;
-      margin-bottom: 12px;
-      color: #fff;
-    }
-
-    .hero-subtitle {
-      font-size: 15px;
-      color: var(--muted);
-      line-height: 1.7;
-      max-width: 520px;
-    }
-
-    .hero-list {
-      margin-top: 28px;
-      list-style: none;
-      display: grid;
-      gap: 14px;
-    }
-
-    .hero-list li {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      color: var(--text);
-      font-weight: 500;
-    }
-
-    .check {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: rgba(37, 99, 235, 0.18);
-      display: grid;
-      place-items: center;
-      color: var(--accent-2);
-      font-weight: 700;
-      border: 1px solid rgba(37, 99, 235, 0.35);
-      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.18);
-    }
-
-    .hero-cta {
-      margin-top: auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 18px;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.02);
-    }
-
-    .hero-cta p {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .ghost-btn {
-      color: #fff;
-      text-decoration: none;
-      font-weight: 700;
-      padding: 12px 18px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: linear-gradient(120deg, rgba(37, 99, 235, 0.65), rgba(56, 189, 248, 0.5));
-      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.32);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .ghost-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 36px rgba(37, 99, 235, 0.42); }
-
-    .panel {
-      padding: 34px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      background: rgba(15, 23, 42, 0.92);
-    }
-
-    .panel-header h1 {
-      font-size: 24px;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .panel-header p {
-      color: var(--muted);
-      margin-top: 6px;
-      font-size: 14px;
-    }
-
-    .error-box {
-      border: 1px solid rgba(249, 115, 22, 0.35);
-      background: rgba(249, 115, 22, 0.08);
-      color: #fed7aa;
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .error-box ul { padding-left: 18px; margin: 0; }
-    .error-box li { margin-bottom: 6px; }
-
-    form { display: grid; gap: 14px; }
-
-    label {
-      display: block;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--muted);
-      margin-bottom: 6px;
-      font-weight: 700;
-    }
-
-    .input {
-      width: 100%;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.03);
-      color: #fff;
-      padding: 13px 14px;
-      font-size: 15px;
-      transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-    }
-
-    .input::placeholder { color: #8ea0be; }
-
-    .input:focus {
-      outline: none;
-      border-color: rgba(56, 189, 248, 0.65);
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .form-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-    }
-
-    .link {
-      color: var(--accent-2);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .link:hover { text-decoration: underline; }
-
-    .cta {
-      margin-top: 6px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      font-weight: 800;
-      font-size: 15px;
-      cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-      color: #fff;
-    }
-
-    .btn-primary {
-      background: linear-gradient(120deg, #2563eb, #38bdf8);
-      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35);
-    }
-
-    .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
-    .btn-primary:active { transform: translateY(1px); }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      color: #cbd5e1;
-    }
-
-    .divider {
-      margin: 8px 0 4px;
-      color: var(--muted);
-      font-size: 12px;
-      text-align: center;
-    }
-
-    .footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 18px;
-    }
-
-    .footer a { color: var(--accent-2); text-decoration: none; }
-    .footer a:hover { text-decoration: underline; }
-
-    @media (max-width: 900px) {
-      .shell { grid-template-columns: 1fr; }
-      .hero { border-right: none; border-bottom: 1px solid var(--border); }
-      body { padding: 22px 14px; }
-    }
-  </style>
+  <link rel="stylesheet" href="assets/css/auth-modern.css">
 </head>
-<body <?php echo $backgroundStyle ? 'style="' . $backgroundStyle . '"' : ''; ?>>
+<body class="auth" <?php echo $theme['backgroundStyle'] ? 'style="' . $theme['backgroundStyle'] . '"' : ''; ?>>
 
 <div class="shell">
   <div class="hero">
     <div>
       <div class="hero-header">
-        <div class="hero-logo">
-          <?php if ($siteLogo && getAssetPath($siteLogo) && file_exists(getAssetPath($siteLogo))): ?>
-            <img src="<?php echo htmlspecialchars(getAssetUrl($siteLogo)); ?>?v=<?php echo time(); ?>" alt="Logo" style="height:40px; width:auto;">
-          <?php else: ?>
-            <svg viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <text x="10" y="35" font-family="Manrope, sans-serif" font-size="28" font-weight="700" fill="#fff">CyberCore</text>
-            </svg>
-          <?php endif; ?>
-        </div>
+        <div class="hero-logo"><?php renderAuthLogo($theme['logoUrl']); ?></div>
       </div>
 
-      <div>
-        <p style="text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; color: var(--accent-2); font-weight: 700;">Aceda ao seu painel</p>
-        <h1 class="hero-title">Bem-vindo(a) à CyberCore</h1>
-        <p class="hero-subtitle">Faça login com o email ou o seu identificador para gerir os seus serviços, faturação e pedir suporte num só Painel.</p>
+      <p style="text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; color: var(--accent-2); font-weight: 700;">Aceda ao seu painel</p>
+      <h1 class="hero-title">Bem-vindo(a) à CyberCore</h1>
+      <p class="hero-subtitle">Faça login com o email ou o seu identificador para gerir os seus serviços, faturação e pedir suporte num só Painel.</p>
 
-        <ul class="hero-list">
-          <li><span class="check">✓</span> Login seguro com email ou CYC#ID</li>
-          <li><span class="check">✓</span> Autenticação rápida com sessão renovada</li>
-          <li><span class="check">✓</span> Monitorização de segurança e atividade</li>
-        </ul>
-      </div>
+      <ul class="hero-list">
+        <li><span class="check">✓</span> Login seguro com email ou CYC#ID</li>
+        <li><span class="check">✓</span> Autenticação rápida com sessão renovada</li>
+        <li><span class="check">✓</span> Monitorização de segurança e atividade</li>
+      </ul>
     </div>
-
   </div>
 
   <div class="panel">
