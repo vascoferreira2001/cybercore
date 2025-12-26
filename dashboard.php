@@ -6,11 +6,7 @@ $user = currentUser();
 $pdo = getDB();
 if (!$user) { header('Location: logout.php'); exit; }
 
-// Gerar CWC ID
-$cwc = 'CWC#' . str_pad($user['id'], 4, '0', STR_PAD_LEFT);
-
-// Resumos e métricas conforme role
-// Função segura para contagens que evita falhas caso tabelas não existam
+// Função segura para contagens
 function safeCount($pdo, $sql, $params = []) {
   try {
     $stmt = $pdo->prepare($sql);
@@ -22,216 +18,645 @@ function safeCount($pdo, $sql, $params = []) {
   }
 }
 
+// Buscar dados recentes
+$recentServices = [];
+$recentInvoices = [];
+$recentTickets = [];
+
+try {
+  if ($user['role'] === 'Cliente') {
+    // Serviços recentes do cliente
+    $stmt = $pdo->prepare('SELECT * FROM domains WHERE user_id = ? ORDER BY created_at DESC LIMIT 5');
+    $stmt->execute([$user['id']]);
+    $recentServices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Faturas recentes
+    $stmt = $pdo->prepare('SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC LIMIT 3');
+    $stmt->execute([$user['id']]);
+    $recentInvoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Tickets recentes
+    $stmt = $pdo->prepare('SELECT * FROM tickets WHERE user_id = ? ORDER BY created_at DESC LIMIT 3');
+    $stmt->execute([$user['id']]);
+    $recentTickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  } else {
+    // Para staff, mostrar dados gerais
+    $stmt = $pdo->prepare('SELECT * FROM tickets ORDER BY created_at DESC LIMIT 5');
+    $stmt->execute();
+    $recentTickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  }
+} catch (Throwable $e) {
+  error_log('Error fetching dashboard data: ' . $e->getMessage());
+}
+
+// Métricas
 $metrics = [];
 if ($user['role'] === 'Gestor') {
-  $metrics['users_total'] = safeCount($pdo, 'SELECT COUNT(*) FROM users');
-  $metrics['domains_total'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains');
-  $metrics['invoices_unpaid'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE status = 'unpaid'");
-  $metrics['tickets_open'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'open'");
-} elseif ($user['role'] === 'Suporte Financeira') {
-  $metrics['invoices_total'] = safeCount($pdo, 'SELECT COUNT(*) FROM invoices');
-  $metrics['invoices_unpaid'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE status = 'unpaid'");
-} elseif (in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])) {
-  $metrics['tickets_open'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'open'");
-  $metrics['domains_total'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains');
-} else { // Cliente
-  $metrics['total_services'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains WHERE user_id = ? AND status = "active"', [$user['id']]);
-  $metrics['my_services_active'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains WHERE user_id = ? AND type = "Domínios" AND status = "active"', [$user['id']]);
-  $metrics['my_tickets_active'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE user_id = ? AND status = 'open'", [$user['id']]);
-  $metrics['overdue_invoices'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE user_id = ? AND status != 'paid' AND due_date < NOW()", [$user['id']]);
-}
-
-// Ações por papel (renderização comum)
-$actions = [];
-if ($user['role'] === 'Gestor') {
-  $actions = [
-    ['label' => 'Clientes', 'href' => '/admin/customers.php', 'primary' => true],
-    ['label' => 'Tickets', 'href' => '/admin/tickets.php'],
-    ['label' => 'Relatórios', 'href' => '/admin/reports.php'],
-    ['label' => 'Definições', 'href' => '/admin/settings.php']
-  ];
-} elseif ($user['role'] === 'Suporte Financeira') {
-  $actions = [
-    ['label' => 'Faturas', 'href' => '/admin/payments.php', 'primary' => true],
-    ['label' => 'Avisos de Pagamento', 'href' => '/admin/payment-warnings.php'],
-    ['label' => 'Despesas', 'href' => '/admin/expenses.php']
-  ];
-} elseif (in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])) {
-  $actions = [
-    ['label' => 'Tickets', 'href' => '/admin/tickets.php', 'primary' => true],
-    ['label' => 'Documentos', 'href' => '/admin/documents.php'],
-    ['label' => 'Bancos de Conhecimento', 'href' => '/admin/knowledge-base.php']
-  ];
+  $metrics['clients'] = safeCount($pdo, "SELECT COUNT(*) FROM users WHERE role = 'Cliente'");
+  $metrics['services'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains');
+  $metrics['revenue'] = safeCount($pdo, "SELECT COALESCE(SUM(amount), 0) FROM invoices WHERE status = 'paid' AND MONTH(paid_at) = MONTH(CURRENT_DATE())");
+  $metrics['tickets'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE status = 'open'");
 } else {
-  $actions = [
-    ['label' => 'Abrir Ticket', 'href' => '/support.php', 'primary' => true],
-    ['label' => 'Ver Faturas', 'href' => '/finance.php'],
-    ['label' => 'Gerir Domínios', 'href' => '/domains.php']
-  ];
-}
-
-// Atividade recente
-$activities = [];
-try {
-  $stmt = $pdo->prepare('SELECT type, message, created_at FROM logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 5');
-  $stmt->execute([$user['id']]);
-  $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-  // silencioso
+  $metrics['services'] = safeCount($pdo, 'SELECT COUNT(*) FROM domains WHERE user_id = ? AND status = "active"', [$user['id']]);
+  $metrics['invoices'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE user_id = ? AND status = 'unpaid'", [$user['id']]);
+  $metrics['tickets'] = safeCount($pdo, "SELECT COUNT(*) FROM tickets WHERE user_id = ? AND status = 'open'", [$user['id']]);
+  $metrics['spent'] = safeCount($pdo, "SELECT COALESCE(SUM(amount), 0) FROM invoices WHERE user_id = ? AND status = 'paid'", [$user['id']]);
 }
 
 ?>
 <?php define('DASHBOARD_LAYOUT', true); ?>
 <?php include __DIR__ . '/inc/header.php'; ?>
 
-<div class="dashboard-page">
-  <div class="page-header">
-    <div class="page-header-left">
-      <h1 class="page-title">Painel</h1>
-      <p class="page-subtitle">Bem-vindo, <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?> · ID <?php echo $cwc; ?></p>
-    </div>
-    <div class="page-header-right">
-      <a href="/support.php" class="btn btn-secondary btn-sm"><span class="icon">📋</span> Ver Tickets</a>
-      <?php if ($user['role'] === 'Gestor'): ?>
-        <a href="/admin/services.php" class="btn btn-primary btn-sm"><span class="icon">➕</span> Novo Serviço</a>
-      <?php else: ?>
-        <a href="/support.php" class="btn btn-primary btn-sm"><span class="icon">➕</span> Abrir Ticket</a>
-      <?php endif; ?>
-    </div>
+<style>
+.modern-dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.welcome-section {
+  margin-bottom: 40px;
+}
+
+.welcome-section h1 {
+  font-size: 32px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.welcome-section p {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 4px 0;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.stat-change {
+  font-size: 13px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.stat-change.positive {
+  color: #16a34a;
+}
+
+.stat-change.negative {
+  color: #dc2626;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.card-action {
+  font-size: 14px;
+  color: #007dff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.card-action:hover {
+  color: #0066cc;
+}
+
+.card-body {
+  padding: 24px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.modern-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.modern-table thead th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.modern-table tbody td {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.modern-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.modern-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge-success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.badge-warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.badge-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.badge-info {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.badge-secondary {
+  background: #f3f4f6;
+  color: #666;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: #999;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.action-btn {
+  display: block;
+  padding: 16px 20px;
+  background: white;
+  border: 2px solid #e5e5e5;
+  border-radius: 10px;
+  text-align: center;
+  text-decoration: none;
+  color: #1a1a1a;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  border-color: #007dff;
+  color: #007dff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 125, 255, 0.15);
+}
+
+.action-btn.primary {
+  background: #007dff;
+  border-color: #007dff;
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background: #0066cc;
+  border-color: #0066cc;
+  color: white;
+}
+
+.activity-item {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 4px 0;
+}
+
+.activity-desc {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.activity-time {
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
+}
+</style>
+
+<div class="modern-dashboard">
+  <!-- Welcome Section -->
+  <div class="welcome-section">
+    <h1>Bem-vindo de volta, <?php echo htmlspecialchars($user['first_name']); ?>! 👋</h1>
+    <p>Aqui está uma visão geral da sua atividade recente</p>
   </div>
 
-  <!-- Metrics Overview -->
-  <div class="metrics-grid">
+  <!-- Stats Grid -->
+  <div class="stats-grid">
     <?php if ($user['role'] === 'Gestor'): ?>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #e0f2fe;"><span style="color: #0284c7;">👥</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Utilizadores</div>
-          <div class="metric-value"><?php echo $metrics['users_total']; ?></div>
-          <div class="metric-subtitle">0 total</div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;">👥</div>
         </div>
+        <div class="stat-value"><?php echo $metrics['clients']; ?></div>
+        <div class="stat-label">Total de Clientes</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #dcfce7;"><span style="color: #16a34a;">🌐</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Domínios</div>
-          <div class="metric-value"><?php echo $metrics['domains_total']; ?></div>
-          <div class="metric-subtitle">Total registados</div>
+      
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">📦</div>
         </div>
+        <div class="stat-value"><?php echo $metrics['services']; ?></div>
+        <div class="stat-label">Serviços Ativos</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #fef3c7;"><span style="color: #d97706;">💰</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Faturas por pagar</div>
-          <div class="metric-value"><?php echo $metrics['invoices_unpaid']; ?></div>
-          <div class="metric-subtitle">Pendentes</div>
+      
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #fef3c7; color: #d97706;">💰</div>
         </div>
+        <div class="stat-value">€<?php echo number_format($metrics['revenue'], 2); ?></div>
+        <div class="stat-label">Receita Este Mês</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #ede9fe;"><span style="color: #7c3aed;">🎫</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Tickets abertos</div>
-          <div class="metric-value"><?php echo $metrics['tickets_open']; ?></div>
-          <div class="metric-subtitle">Requerem atenção</div>
+      
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #ede9fe; color: #7c3aed;">🎫</div>
         </div>
-      </div>
-    <?php elseif ($user['role'] === 'Suporte Financeira'): ?>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #e0f2fe;"><span style="color: #0284c7;">📊</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Total de faturas</div>
-          <div class="metric-value"><?php echo $metrics['invoices_total']; ?></div>
-          <div class="metric-subtitle">Todas as faturas</div>
-        </div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #fef3c7;"><span style="color: #d97706;">⚠️</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Faturas por pagar</div>
-          <div class="metric-value"><?php echo $metrics['invoices_unpaid']; ?></div>
-          <div class="metric-subtitle">Pendentes</div>
-        </div>
-      </div>
-    <?php elseif (in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])): ?>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #ede9fe;"><span style="color: #7c3aed;">🎫</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Tickets abertos</div>
-          <div class="metric-value"><?php echo $metrics['tickets_open']; ?></div>
-          <div class="metric-subtitle">Requerem atenção</div>
-        </div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #dcfce7;"><span style="color: #16a34a;">🌐</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Domínios total</div>
-          <div class="metric-value"><?php echo $metrics['domains_total']; ?></div>
-          <div class="metric-subtitle">Geridos</div>
-        </div>
+        <div class="stat-value"><?php echo $metrics['tickets']; ?></div>
+        <div class="stat-label">Tickets Abertos</div>
       </div>
     <?php else: ?>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #dcfce7;"><span style="color: #16a34a;">✅</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Serviços Ativos</div>
-          <div class="metric-value"><?php echo $metrics['total_services']; ?></div>
-          <div class="metric-subtitle">A funcionar</div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">✓</div>
         </div>
+        <div class="stat-value"><?php echo $metrics['services']; ?></div>
+        <div class="stat-label">Serviços Ativos</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #e0f2fe;"><span style="color: #0284c7;">🌐</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Domínios Ativos</div>
-          <div class="metric-value"><?php echo $metrics['my_services_active']; ?></div>
-          <div class="metric-subtitle">Registados</div>
+      
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #fef3c7; color: #d97706;">📄</div>
         </div>
+        <div class="stat-value"><?php echo $metrics['invoices']; ?></div>
+        <div class="stat-label">Faturas Pendentes</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #fee2e2;"><span style="color: #dc2626;">⚠️</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Pagamentos em Atraso</div>
-          <div class="metric-value"><?php echo $metrics['overdue_invoices']; ?></div>
-          <div class="metric-subtitle">Requerem atenção</div>
+      
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #ede9fe; color: #7c3aed;">💬</div>
         </div>
+        <div class="stat-value"><?php echo $metrics['tickets']; ?></div>
+        <div class="stat-label">Tickets Abertos</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-icon" style="background: #ede9fe;"><span style="color: #7c3aed;">🎫</span></div>
-        <div class="metric-content">
-          <div class="metric-title">Tickets Abertos</div>
-          <div class="metric-value"><?php echo $metrics['my_tickets_active']; ?></div>
-          <div class="metric-subtitle">Pedidos ativos</div>
+      
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;">💳</div>
         </div>
+        <div class="stat-value">€<?php echo number_format($metrics['spent'], 2); ?></div>
+        <div class="stat-label">Total Gasto</div>
       </div>
     <?php endif; ?>
   </div>
 
-  <!-- Recent Activity Section -->
-  <div class="dashboard-section">
-    <div class="section-header">
-      <h2 class="section-title"><span class="icon">📋</span> Atividade Recente</h2>
-      <a href="/logs.php" class="view-all-link">Ver tudo <span class="arrow">→</span></a>
-    </div>
-    <div class="dashboard-card">
-      <?php if (empty($activities)): ?>
-        <div class="empty-state">
-          <div class="empty-icon">📭</div>
-          <p>Sem atividade recente.</p>
+  <!-- Content Grid -->
+  <div class="content-grid">
+    <!-- Main Content -->
+    <div>
+      <!-- Recent Services/Tickets -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <h2 class="card-title"><?php echo $user['role'] === 'Cliente' ? 'Serviços Recentes' : 'Tickets Recentes'; ?></h2>
+          <a href="<?php echo $user['role'] === 'Cliente' ? '/services.php' : '/admin/tickets.php'; ?>" class="card-action">Ver todos →</a>
         </div>
-      <?php else: ?>
-        <div class="activity-list">
-          <?php foreach ($activities as $act): ?>
-            <div class="activity-item">
-              <div class="activity-content">
-                <strong><?php echo htmlspecialchars($act['type']); ?></strong> — <?php echo htmlspecialchars($act['message']); ?>
-              </div>
-              <div class="activity-meta"><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($act['created_at']))); ?></div>
+        <div class="table-responsive">
+          <?php if ($user['role'] === 'Cliente' && !empty($recentServices)): ?>
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>Serviço</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($recentServices as $service): ?>
+                  <tr>
+                    <td><strong><?php echo htmlspecialchars($service['domain_name'] ?? 'N/A'); ?></strong></td>
+                    <td><?php echo htmlspecialchars($service['type'] ?? 'N/A'); ?></td>
+                    <td>
+                      <span class="badge badge-<?php echo $service['status'] === 'active' ? 'success' : 'secondary'; ?>">
+                        <?php echo htmlspecialchars($service['status'] ?? 'N/A'); ?>
+                      </span>
+                    </td>
+                    <td><?php echo date('d/m/Y', strtotime($service['created_at'])); ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          <?php elseif (!empty($recentTickets)): ?>
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>Assunto</th>
+                  <th>Estado</th>
+                  <th>Prioridade</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($recentTickets as $ticket): ?>
+                  <tr>
+                    <td><strong><?php echo htmlspecialchars($ticket['subject'] ?? 'N/A'); ?></strong></td>
+                    <td>
+                      <span class="badge badge-<?php echo $ticket['status'] === 'open' ? 'warning' : 'success'; ?>">
+                        <?php echo htmlspecialchars($ticket['status'] ?? 'N/A'); ?>
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge badge-<?php echo $ticket['priority'] === 'high' ? 'danger' : 'info'; ?>">
+                        <?php echo htmlspecialchars($ticket['priority'] ?? 'normal'); ?>
+                      </span>
+                    </td>
+                    <td><?php echo date('d/m/Y', strtotime($ticket['created_at'])); ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          <?php else: ?>
+            <div class="empty-state">
+              <div class="empty-state-icon">📭</div>
+              <p class="empty-state-text">Nenhum item para exibir</p>
             </div>
-          <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <!-- Recent Invoices (for clients) -->
+      <?php if ($user['role'] === 'Cliente'): ?>
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Faturas Recentes</h2>
+            <a href="/finance.php" class="card-action">Ver todas →</a>
+          </div>
+          <div class="table-responsive">
+            <?php if (!empty($recentInvoices)): ?>
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Estado</th>
+                    <th>Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php foreach ($recentInvoices as $invoice): ?>
+                    <tr>
+                      <td><strong>#<?php echo htmlspecialchars($invoice['id']); ?></strong></td>
+                      <td><?php echo htmlspecialchars($invoice['description'] ?? 'Fatura'); ?></td>
+                      <td><strong>€<?php echo number_format($invoice['amount'], 2); ?></strong></td>
+                      <td>
+                        <span class="badge badge-<?php echo $invoice['status'] === 'paid' ? 'success' : ($invoice['status'] === 'unpaid' ? 'warning' : 'danger'); ?>">
+                          <?php echo htmlspecialchars($invoice['status']); ?>
+                        </span>
+                      </td>
+                      <td><?php echo date('d/m/Y', strtotime($invoice['created_at'])); ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            <?php else: ?>
+              <div class="empty-state">
+                <div class="empty-state-icon">💳</div>
+                <p class="empty-state-text">Nenhuma fatura encontrada</p>
+              </div>
+            <?php endif; ?>
+          </div>
         </div>
       <?php endif; ?>
     </div>
-  </div>
 
+    <!-- Sidebar -->
+    <div>
+      <!-- Quick Actions -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <h2 class="card-title">Ações Rápidas</h2>
+        </div>
+        <div class="card-body">
+          <div class="quick-actions">
+            <?php if ($user['role'] === 'Gestor'): ?>
+              <a href="/admin/customers.php" class="action-btn primary">
+                <div style="margin-bottom: 8px; font-size: 20px;">👥</div>
+                Clientes
+              </a>
+              <a href="/admin/services.php" class="action-btn">
+                <div style="margin-bottom: 8px; font-size: 20px;">📦</div>
+                Serviços
+              </a>
+              <a href="/admin/tickets.php" class="action-btn">
+                <div style="margin-bottom: 8px; font-size: 20px;">🎫</div>
+                Tickets
+              </a>
+              <a href="/admin/payments.php" class="action-btn">
+                <div style="margin-bottom: 8px; font-size: 20px;">💰</div>
+                Pagamentos
+              </a>
+            <?php else: ?>
+              <a href="/support.php" class="action-btn primary">
+                <div style="margin-bottom: 8px; font-size: 20px;">➕</div>
+                Novo Ticket
+              </a>
+              <a href="/domains.php" class="action-btn">
+                <div style="margin-bottom: 8px; font-size: 20px;">🌐</div>
+                Domínios
+              </a>
+              <a href="/finance.php" class="action-btn">
+                <div style="margin-bottom: 8px; font-size: 20px;">💳</div>
+                Faturas
+              </a>
+              <a href="/services.php" class="action-btn">
+                <div style="margin-bottom: 8px; font-size: 20px;">📦</div>
+                Serviços
+              </a>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+
+      <!-- System Status -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Estado do Sistema</h2>
+        </div>
+        <div class="card-body">
+          <div class="activity-item">
+            <div class="activity-icon" style="background: #dcfce7; color: #16a34a;">✓</div>
+            <div class="activity-content">
+              <h4 class="activity-title">Todos os Sistemas Operacionais</h4>
+              <p class="activity-desc">Funcionando normalmente</p>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon" style="background: #e0f2fe; color: #0284c7;">🔒</div>
+            <div class="activity-content">
+              <h4 class="activity-title">Segurança</h4>
+              <p class="activity-desc">Proteção ativa</p>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon" style="background: #ede9fe; color: #7c3aed;">📊</div>
+            <div class="activity-content">
+              <h4 class="activity-title">Performance</h4>
+              <p class="activity-desc">Excelente</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <?php include __DIR__ . '/inc/footer.php'; ?>
