@@ -77,8 +77,8 @@ try {
       </div>
     <?php endif; ?>
     <nav class="sidebar-nav">
-      <!-- Menu para: Gestor, Suporte ao Cliente, Suporte Técnica, Suporte Financeira -->
-      <?php if($cu && in_array($cu['role'], ['Gestor','Suporte ao Cliente','Suporte Técnica','Suporte Financeira'])): ?>
+      <!-- Menu para: Gestor, Suporte ao Cliente, Suporte Técnico, Suporte Financeiro -->
+      <?php if($cu && in_array($cu['role'], ['Gestor','Suporte ao Cliente','Suporte Técnico','Suporte Financeiro'])): ?>
 
         <!-- Painel -->
         <a href="/dashboard.php" class="nav-item">
@@ -153,8 +153,8 @@ try {
           </div>
         </div>
 
-        <!-- Suporte Financeiro (submenu) - Apenas Gestor e Suporte Financeira -->
-        <?php if($cu && in_array($cu['role'], ['Gestor','Suporte Financeira'])): ?>
+        <!-- Suporte Financeiro (submenu) - Apenas Gestor e Suporte Financeiro -->
+        <?php if($cu && in_array($cu['role'], ['Gestor','Suporte Financeiro'])): ?>
         <div class="nav-group">
           <a href="#" class="nav-item submenu-toggle" data-submenu="finance">
             <span class="icon">💰</span> Suporte Financeiro <span class="arrow">▼</span>

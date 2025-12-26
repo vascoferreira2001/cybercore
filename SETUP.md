@@ -136,8 +136,8 @@ php scripts/sample_users.php
 | gestor@example.test | Gestor | Password123! |
 | cliente@example.test | Cliente | Password123! |
 | suporte_cliente@example.test | Suporte ao Cliente | Password123! |
-| suporte_finance@example.test | Suporte Financeira | Password123! |
-| suporte_tecnica@example.test | Suporte Técnica | Password123! |
+| suporte_financeiro@example.test | Suporte Financeiro | Password123! |
+| suporte_tecnico@example.test | Suporte Técnico | Password123! |
 
 ### Passo 5: Testar Ligação à Base de Dados
 
@@ -409,14 +409,14 @@ mysql cybercore < sql/schema.sql
 - ❌ Admin
 - ❌ Financeiro
 
-### Suporte Técnica
+### Suporte Técnico
 - ✅ Ver/editar todos os domínios (sem eliminar)
 - ✅ Ver tickets de suporte
 - ✅ Ver logs técnicos
 - ❌ Admin
 - ❌ Financeiro
 
-### Suporte Financeira
+### Suporte Financeiro
 - ✅ Ver/editar todas as faturas
 - ✅ Ver logs financeiros
 - ❌ Domínios

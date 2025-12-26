@@ -4,7 +4,7 @@ require_once __DIR__ . '/../inc/auth.php';
 require_once __DIR__ . '/../inc/db.php';
 require_once __DIR__ . '/../inc/dashboard_helper.php';
 
-checkRole(['Gestor','Suporte ao Cliente','Suporte Técnica','Suporte Financeira']);
+checkRole(['Gestor','Suporte ao Cliente','Suporte Técnico','Suporte Financeiro']);
 $user = currentUser();
 $GLOBALS['currentUser'] = $user;
 

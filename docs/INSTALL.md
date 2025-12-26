@@ -59,8 +59,8 @@ Utilizadores criados:
 - `gestor@example.test` / `Password123!` (Gestor)
 - `cliente@example.test` / `Password123!` (Cliente)
 - `suporte_cliente@example.test` / `Password123!` (Suporte ao Cliente)
-- `suporte_finance@example.test` / `Password123!` (Suporte Financeira)
-- `suporte_tecnica@example.test` / `Password123!` (Suporte Técnica)
+- `suporte_financeiro@example.test` / `Password123!` (Suporte Financeiro)
+- `suporte_tecnico@example.test` / `Password123!` (Suporte Técnico)
 
 ### Troubleshooting
 

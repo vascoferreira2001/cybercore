@@ -64,7 +64,8 @@ function sendTemplatedEmail($pdo, $templateKey, $toEmail, $toName, $variables = 
     
     // Enviar email
     try {
-        return sendMail($toEmail, $toName, $subject, $bodyHtml, $bodyText);
+        // Enviar com ordem correta de argumentos: to, subject, html, text
+        return sendMail($toEmail, $subject, $bodyHtml, $bodyText);
     } catch (Exception $e) {
         error_log("Failed to send templated email '$templateKey' to $toEmail: " . $e->getMessage());
         return false;

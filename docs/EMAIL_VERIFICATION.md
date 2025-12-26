@@ -15,14 +15,20 @@ Todos os novos utilizadores que se registam têm de verificar o seu email antes 
 - Utilizador redirecionado para [registration_success.php](../registration_success.php) com instruções
 
 ### 2. Verificação ([verify_email.php](../verify_email.php))
+- Página com UI moderna (layout "auth" com cartão e alertas)
 - Utilizador clica no link recebido por email
 - Sistema valida token e prazo de validade
-- Se válido: marca `email_verified = 1` na base de dados
-- Mensagem de sucesso com link para login
-- Se inválido/expirado: mensagem de erro
+- Se válido: marca `email_verified = 1` e mostra CTA para login
+- Se inválido/expirado: alerta claro e opção de **Reenviar verificação**
+
+#### Reenvio de Verificação
+- Formulário no `verify_email.php` para reenviar o email de verificação
+- Protegido por CSRF e com rate limiting simples (10 minutos)
+- Mensagem genérica por segurança: "Se existir uma conta, enviámos um novo link"
+- Gera novo `email_verification_token` (24h) e envia via template `email_verification`
 
 ### 3. Login ([login.php](../login.php))
-- Sistema verifica se utilizador é staff (Gestor, Suporte ao Cliente, Suporte Técnica, Suporte Financeira)
+- Sistema verifica se utilizador é staff (Gestor, Suporte ao Cliente, Suporte Técnico, Suporte Financeiro)
 - **Staff:** login permitido sem verificação (contas criadas por administradores)
 - **Clientes:** login bloqueado se `email_verified = 0`
 - Mensagem clara para verificar email antes de fazer login
@@ -141,7 +147,8 @@ Configure as definições SMTP em **Admin → Definições → Email**:
 - Facilita auditoria e troubleshooting
 
 ### Rate Limiting
-- Recomendado: implementar limite de emails por IP (futuro)
+- Implementado: limite por utilizador (10 minutos entre reenvios)
+- Futuro: ampliar para limite por IP
 - Previne abuso do sistema de registo
 
 ## Modo de Manutenção
@@ -195,4 +202,4 @@ Quando o **Modo de Manutenção** está ativo com `disable_login = 1`:
 
 ---
 
-**Última atualização:** 2025-12-25
+**Última atualização:** 2025-12-26

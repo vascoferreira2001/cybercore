@@ -24,7 +24,7 @@ try {
         $hasRole = false; // Se não conseguirmos saber o schema, tentamos adicionar e tratamos erro.
     }
     if (!$hasRole) {
-        $pdo->exec("ALTER TABLE users\n  ADD COLUMN role ENUM('Cliente','Suporte ao Cliente','Suporte Financeira','Suporte Técnica','Gestor') NOT NULL DEFAULT 'Cliente'");
+        $pdo->exec("ALTER TABLE users\n  ADD COLUMN role ENUM('Cliente','Suporte ao Cliente','Suporte Financeiro','Suporte Técnico','Gestor') NOT NULL DEFAULT 'Cliente'");
         echo "Coluna role adicionada em users.\n";
     } else {
         echo "Coluna role já existe em users — a saltar.\n";

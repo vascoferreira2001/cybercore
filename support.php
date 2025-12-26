@@ -5,7 +5,7 @@ require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/csrf.php';
 require_once __DIR__ . '/inc/dashboard_helper.php';
 
-checkRole(['Cliente','Suporte ao Cliente','Suporte Técnica','Gestor']);
+checkRole(['Cliente','Suporte ao Cliente','Suporte Técnico','Gestor']);
 $user = currentUser();
 $GLOBALS['currentUser'] = $user;
 $pdo = getDB();

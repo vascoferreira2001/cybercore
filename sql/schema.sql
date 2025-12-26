@@ -3,7 +3,7 @@
 -- Último atualizado: 26 de Dezembro de 2025
 -- Design System: Font=Manrope, Cor Primária=#007dff
 -- Segurança: Email UNIQUE, Identificador UNIQUE (CYC#00001), Password Hashed
--- Sistema de Roles: Cliente, Gestor, Suporte ao Cliente, Suporte Técnica, Suporte Financeira
+-- Sistema de Roles: Cliente, Gestor, Suporte ao Cliente, Suporte Técnico, Suporte Financeiro
 -- Features: Dashboard dinâmico por role, Sidebar inteligente, Proteção de rotas
 
 CREATE DATABASE IF NOT EXISTS cybercore CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
   nif VARCHAR(20) NOT NULL,
   entity_type ENUM('Singular','Coletiva') NOT NULL DEFAULT 'Singular',
   company_name VARCHAR(255) DEFAULT NULL,
-  role ENUM('Cliente','Suporte ao Cliente','Suporte Financeira','Suporte Técnica','Gestor') NOT NULL DEFAULT 'Cliente',
+  role ENUM('Cliente','Suporte ao Cliente','Suporte Financeiro','Suporte Técnico','Gestor') NOT NULL DEFAULT 'Cliente',
   password_hash VARCHAR(255) NOT NULL,
   receive_news TINYINT(1) DEFAULT 0,
   email_verified TINYINT(1) DEFAULT 0,

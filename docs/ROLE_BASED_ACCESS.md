@@ -20,11 +20,11 @@ O CyberCore agora possui um sistema completo de proteção de rotas baseado em c
 - Gestão de tickets e clientes
 - Menu: Dashboard, Serviços, Suporte, Clientes, Tickets, Logs
 
-### 3. **Suporte Técnica**
+### 3. **Suporte Técnico**
 - Gestão de serviços técnicos e domínios
 - Menu: Dashboard, Serviços, Domínios, Alojamento, Suporte, Gestão de Serviços, Logs
 
-### 4. **Suporte Financeira**
+### 4. **Suporte Financeiro**
 - Gestão de faturas e pagamentos
 - Menu: Dashboard, Faturação, Suporte, Pagamentos, Logs
 
@@ -44,8 +44,8 @@ define('DASHBOARD_LAYOUT', true);
 require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/dashboard_helper.php';
 
-// Proteger rota - apenas Gestor e Suporte Financeira podem aceder
-checkRole(['Gestor', 'Suporte Financeira']);
+// Proteger rota - apenas Gestor e Suporte Financeiro podem aceder
+checkRole(['Gestor', 'Suporte Financeiro']);
 
 $user = currentUser();
 $GLOBALS['currentUser'] = $user;
@@ -180,13 +180,13 @@ Use `hasPermission('nome_permissao')` para verificar:
 - `can_manage_tickets`
 - (+ todas as permissões de Cliente)
 
-### Suporte Técnica
+### Suporte Técnico
 - `can_manage_services`
 - `can_manage_domains`
 - `can_manage_hosting`
 - (+ todas as permissões de Cliente)
 
-### Suporte Financeira
+### Suporte Financeiro
 - `can_view_all_invoices`
 - `can_manage_invoices`
 - `can_view_all_payments`
@@ -300,8 +300,8 @@ require_once __DIR__ . '/inc/auth.php';
 
 header('Content-Type: application/json');
 
-// Apenas Gestor e Suporte Financeira podem aceder
-checkRole(['Gestor', 'Suporte Financeira']);
+// Apenas Gestor e Suporte Financeiro podem aceder
+checkRole(['Gestor', 'Suporte Financeiro']);
 
 $user = currentUser();
 

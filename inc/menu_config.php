@@ -17,7 +17,7 @@ function getMenuItemsByRole($role) {
             'label' => 'Dashboard',
             'icon' => 'dashboard',
             'key' => 'dashboard',
-            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnica', 'Suporte Financeira']
+            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnico', 'Suporte Financeiro']
         ]
     ];
 
@@ -28,35 +28,35 @@ function getMenuItemsByRole($role) {
             'label' => 'Serviços',
             'icon' => 'package',
             'key' => 'services',
-            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnica']
+            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnico']
         ],
         [
             'url' => '/domains.php',
             'label' => 'Domínios',
             'icon' => 'globe',
             'key' => 'domains',
-            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnica']
+            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnico']
         ],
         [
             'url' => '/hosting.php',
             'label' => 'Alojamento',
             'icon' => 'server',
             'key' => 'hosting',
-            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnica']
+            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnico']
         ],
         [
             'url' => '/finance.php',
             'label' => 'Faturação',
             'icon' => 'credit-card',
             'key' => 'finance',
-            'roles' => ['Cliente', 'Gestor', 'Suporte Financeira']
+            'roles' => ['Cliente', 'Gestor', 'Suporte Financeiro']
         ],
         [
             'url' => '/support.php',
             'label' => 'Suporte',
             'icon' => 'message-circle',
             'key' => 'support',
-            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnica', 'Suporte Financeira']
+            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnico', 'Suporte Financeiro']
         ]
     ];
 
@@ -65,7 +65,7 @@ function getMenuItemsByRole($role) {
         [
             'type' => 'divider',
             'label' => 'Administração',
-            'roles' => ['Gestor', 'Suporte ao Cliente', 'Suporte Técnica', 'Suporte Financeira']
+            'roles' => ['Gestor', 'Suporte ao Cliente', 'Suporte Técnico', 'Suporte Financeiro']
         ],
         [
             'url' => '/admin/customers.php',
@@ -79,21 +79,21 @@ function getMenuItemsByRole($role) {
             'label' => 'Gestão de Serviços',
             'icon' => 'package',
             'key' => 'admin-services',
-            'roles' => ['Gestor', 'Suporte Técnica']
+            'roles' => ['Gestor', 'Suporte Técnico']
         ],
         [
             'url' => '/admin/payments.php',
             'label' => 'Pagamentos',
             'icon' => 'dollar-sign',
             'key' => 'payments',
-            'roles' => ['Gestor', 'Suporte Financeira']
+            'roles' => ['Gestor', 'Suporte Financeiro']
         ],
         [
             'url' => '/admin/tickets.php',
             'label' => 'Tickets',
             'icon' => 'message-square',
             'key' => 'tickets',
-            'roles' => ['Gestor', 'Suporte ao Cliente', 'Suporte Técnica', 'Suporte Financeira']
+            'roles' => ['Gestor', 'Suporte ao Cliente', 'Suporte Técnico', 'Suporte Financeiro']
         ],
         [
             'url' => '/admin/reports.php',
@@ -125,14 +125,14 @@ function getMenuItemsByRole($role) {
             'label' => 'Logs',
             'icon' => 'list',
             'key' => 'logs',
-            'roles' => ['Gestor', 'Suporte ao Cliente', 'Suporte Técnica', 'Suporte Financeira']
+            'roles' => ['Gestor', 'Suporte ao Cliente', 'Suporte Técnico', 'Suporte Financeiro']
         ],
         [
             'url' => '/updates.php',
             'label' => 'Atualizações',
             'icon' => 'upload',
             'key' => 'updates',
-            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnica', 'Suporte Financeira']
+            'roles' => ['Cliente', 'Gestor', 'Suporte ao Cliente', 'Suporte Técnico', 'Suporte Financeiro']
         ]
     ];
 
@@ -219,7 +219,7 @@ function getRolePermissions($role) {
             'can_view_reports' => false,
             'can_access_admin' => true
         ],
-        'Suporte Técnica' => [
+        'Suporte Técnico' => [
             'can_view_own_services' => true,
             'can_view_own_invoices' => true,
             'can_create_tickets' => true,
@@ -233,7 +233,7 @@ function getRolePermissions($role) {
             'can_view_reports' => false,
             'can_access_admin' => true
         ],
-        'Suporte Financeira' => [
+        'Suporte Financeiro' => [
             'can_view_own_services' => true,
             'can_view_own_invoices' => true,
             'can_view_all_invoices' => true,

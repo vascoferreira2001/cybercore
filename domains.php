@@ -4,21 +4,21 @@ require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/dashboard_helper.php';
 
-checkRole(['Cliente','Suporte ao Cliente','Suporte Técnica','Gestor']);
+checkRole(['Cliente','Suporte ao Cliente','Suporte Técnico','Gestor']);
 $user = currentUser();
 $GLOBALS['currentUser'] = $user;
 $pdo = getDB();
 
 // Permissions rules (default):
 // - Gestor: full access to all domains
-// - Suporte ao Cliente / Suporte Técnica: view all, create/edit but not delete
-// - Suporte Financeira: no domain management by default
+// - Suporte ao Cliente / Suporte Técnico: view all, create/edit but not delete
+// - Suporte Financeiro: no domain management by default
 // - Cliente: manage own domains only (CRUD on own)
 
 $action = $_GET['action'] ?? '';
 if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   // Create domain - financial support cannot create domains by default
-  if ($user['role'] === 'Suporte Financeira') { http_response_code(403); echo 'Acesso negado.'; exit; }
+  if ($user['role'] === 'Suporte Financeiro') { http_response_code(403); echo 'Acesso negado.'; exit; }
   // Validate CSRF
   require_once __DIR__ . '/inc/csrf.php'; csrf_validate();
     $domain = trim($_POST['domain'] ?? '');
@@ -39,9 +39,9 @@ if ($action === 'edit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = intval($_POST['id']);
     $stmt = $pdo->prepare('SELECT * FROM domains WHERE id = ?'); $stmt->execute([$id]); $d = $stmt->fetch();
     if (!$d) { header('Location: domains.php'); exit; }
-    // Permission: Gestor can edit all; Suporte ao Cliente / Suporte Técnica can edit; Cliente only own
-    if ($user['role'] === 'Suporte Financeira') { http_response_code(403); echo 'Acesso negado.'; exit; }
-    if ($user['role'] !== 'Gestor' && $d['user_id'] != $user['id'] && !in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])) { http_response_code(403); echo 'Acesso negado.'; exit; }
+    // Permission: Gestor can edit all; Suporte ao Cliente / Suporte Técnico can edit; Cliente only own
+    if ($user['role'] === 'Suporte Financeiro') { http_response_code(403); echo 'Acesso negado.'; exit; }
+    if ($user['role'] !== 'Gestor' && $d['user_id'] != $user['id'] && !in_array($user['role'], ['Suporte ao Cliente','Suporte Técnico'])) { http_response_code(403); echo 'Acesso negado.'; exit; }
     $domain = trim($_POST['domain'] ?? '');
     $registered_on = $_POST['registered_on'] ?: null;
     $expires_on = $_POST['expires_on'] ?: null;
@@ -65,7 +65,7 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Listing
-if (in_array($user['role'], ['Gestor','Suporte ao Cliente','Suporte Técnica'])) {
+if (in_array($user['role'], ['Gestor','Suporte ao Cliente','Suporte Técnico'])) {
     $stmt = $pdo->query('SELECT d.*, u.email AS owner_email, u.first_name, u.last_name FROM domains d JOIN users u ON d.user_id = u.id ORDER BY d.created_at DESC');
     $domains = $stmt->fetchAll();
 } else {
@@ -83,7 +83,7 @@ require_once __DIR__ . '/inc/csrf.php';
 
 $content = '<div class="card">
   <h2>Domínios</h2>';
-if($user['role'] !== 'Suporte Financeira'):
+if($user['role'] !== 'Suporte Financeiro'):
   $content .= '<details>
     <summary>Adicionar novo domínio</summary>
     <form method="post" action="domains.php?action=create">
@@ -115,7 +115,7 @@ else:
     $content .= '<td>' . $d['expires_on'] . '</td>';
     $content .= '<td>' . $d['status'] . '</td>';
     $content .= '<td>';
-    if($user['role'] === 'Gestor' || $d['user_id'] == $user['id'] || in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])): 
+    if($user['role'] === 'Gestor' || $d['user_id'] == $user['id'] || in_array($user['role'], ['Suporte ao Cliente','Suporte Técnico'])): 
       $content .= '<a href="domains_edit.php?id=' . $d['id'] . '">Editar</a>';
     endif;
     if($user['role'] === 'Gestor' || $d['user_id'] == $user['id']): 

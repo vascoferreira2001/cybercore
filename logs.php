@@ -4,12 +4,12 @@ require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/dashboard_helper.php';
 
-checkRole(['Cliente','Suporte Financeira','Gestor']);
+checkRole(['Cliente','Suporte Financeiro','Gestor']);
 $user = currentUser();
 $GLOBALS['currentUser'] = $user;
 $pdo = getDB();
 
-if (in_array($user['role'], ['Suporte Financeira','Gestor'])) {
+if (in_array($user['role'], ['Suporte Financeiro','Gestor'])) {
   $stmt = $pdo->query('SELECT l.*, u.email AS owner_email FROM logs l LEFT JOIN users u ON l.user_id = u.id ORDER BY l.created_at DESC');
   $logs = $stmt->fetchAll();
 } else {

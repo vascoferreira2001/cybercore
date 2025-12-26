@@ -31,6 +31,9 @@ function currentUser()
         $stmt = $pdo->prepare('SELECT id,first_name,last_name,email,role FROM users WHERE id = ?');
         $stmt->execute([$_SESSION['user_id']]);
         $user = $stmt->fetch();
+        if ($user && isset($user['role'])) {
+            $user['role'] = normalizeRoleName($user['role']);
+        }
     }
     return $user;
 }
@@ -87,8 +90,10 @@ function checkRole($allowedRoles)
     }
     
     $allowed = is_array($allowedRoles) ? $allowedRoles : [$allowedRoles];
+    // Normalizar nomes de role para garantir consistência
+    $allowed = array_map('normalizeRoleName', $allowed);
     
-    if (!in_array($user['role'], $allowed)) {
+    if (!in_array(normalizeRoleName($user['role']), $allowed)) {
         // Log acesso negado
         $pdo = getDB();
         try {
@@ -124,7 +129,7 @@ function hasPermission($permission) {
     if (!$user) return false;
     
     require_once __DIR__ . '/menu_config.php';
-    return \hasPermission($user['role'], $permission);
+    return \hasPermission(normalizeRoleName($user['role']), $permission);
 }
 
 /**
@@ -139,4 +144,17 @@ function requirePermission($permission) {
         echo '<p>Permissão necessária: <code>' . htmlspecialchars($permission) . '</code></p>';
         exit;
     }
+}
+
+/**
+ * Normaliza nomes de roles para a forma canónica solicitada
+ * @param string $role
+ * @return string
+ */
+function normalizeRoleName($role) {
+    $map = [
+        'Suporte Técnica' => 'Suporte Técnico',
+        'Suporte Financeira' => 'Suporte Financeiro',
+    ];
+    return $map[$role] ?? $role;
 }

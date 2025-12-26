@@ -89,8 +89,8 @@ Cria 5 utilizadores com password `Password123!`:
 - `gestor@example.test` (Gestor)
 - `cliente@example.test` (Cliente)
 - `suporte_cliente@example.test` (Suporte ao Cliente)
-- `suporte_finance@example.test` (Suporte Financeira)
-- `suporte_tecnica@example.test` (Suporte Técnica)
+- `suporte_financeiro@example.test` (Suporte Financeiro)
+- `suporte_tecnico@example.test` (Suporte Técnico)
 
 ---
 

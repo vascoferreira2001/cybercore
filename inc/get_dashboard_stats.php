@@ -132,7 +132,7 @@ switch ($role) {
         ];
         break;
 
-    case 'Suporte Técnica':
+    case 'Suporte Técnico':
         // Métricas do Suporte Técnico
         $stats['metrics'] = [
             'total_services' => safeCount($pdo, 'SELECT COUNT(*) FROM domains'),
@@ -152,7 +152,7 @@ switch ($role) {
         ];
         break;
 
-    case 'Suporte Financeira':
+    case 'Suporte Financeiro':
         // Métricas do Suporte Financeiro
         $stats['metrics'] = [
             'total_invoices' => safeCount($pdo, 'SELECT COUNT(*) FROM invoices'),
@@ -254,10 +254,10 @@ try {
     elseif ($role === 'Suporte ao Cliente') {
         $activityQuery .= " AND (type LIKE '%ticket%' OR type LIKE '%customer%')";
     }
-    elseif ($role === 'Suporte Técnica') {
+    elseif ($role === 'Suporte Técnico') {
         $activityQuery .= " AND (type LIKE '%service%' OR type LIKE '%domain%' OR type LIKE '%hosting%')";
     }
-    elseif ($role === 'Suporte Financeira') {
+    elseif ($role === 'Suporte Financeiro') {
         $activityQuery .= " AND (type LIKE '%invoice%' OR type LIKE '%payment%')";
     }
     // Gestor vê tudo (sem filtro adicional)

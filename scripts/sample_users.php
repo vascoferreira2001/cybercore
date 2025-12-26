@@ -8,8 +8,8 @@ $pdo = getDB();
 $users = [
   ['first'=>'Cliente','last'=>'Teste','email'=>'cliente@example.test','role'=>'Cliente'],
   ['first'=>'SuporteCliente','last'=>'Teste','email'=>'suporte_cliente@example.test','role'=>'Suporte ao Cliente'],
-  ['first'=>'SuporteFinance','last'=>'Teste','email'=>'suporte_finance@example.test','role'=>'Suporte Financeira'],
-  ['first'=>'SuporteTecnica','last'=>'Teste','email'=>'suporte_tecnica@example.test','role'=>'Suporte Técnica'],
+  ['first'=>'SuporteFinanceiro','last'=>'Teste','email'=>'suporte_financeiro@example.test','role'=>'Suporte Financeiro'],
+  ['first'=>'SuporteTecnico','last'=>'Teste','email'=>'suporte_tecnico@example.test','role'=>'Suporte Técnico'],
   ['first'=>'Gestor','last'=>'Teste','email'=>'gestor@example.test','role'=>'Gestor'],
 ];
 $pwd = 'Password123!';
