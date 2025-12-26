@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="post" id="registerForm">
       <?php echo csrf_input(); ?>
 
-      <div class="form-row-2">
+      <div class="form-grid">
         <div>
           <label>Nome <span class="required">*</span></label>
           <input class="input" type="text" name="first_name" required value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" placeholder="O seu nome">
@@ -145,29 +145,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <label>Sobrenome <span class="required">*</span></label>
           <input class="input" type="text" name="last_name" required value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" placeholder="O seu sobrenome">
         </div>
-      </div>
-
-      <div>
-        <label>E-mail <span class="required">*</span></label>
-        <input class="input" type="email" name="email" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" placeholder="ex: nome@dominio.com">
-      </div>
-
-      <div>
-        <label>NIF <span class="required">*</span></label>
-        <input class="input" type="text" name="nif" pattern="\d{9}" placeholder="123456789" required value="<?php echo htmlspecialchars($_POST['nif'] ?? ''); ?>">
-      </div>
-
-      <div>
-        <label>País</label>
-        <input class="input" type="text" name="country" value="<?php echo htmlspecialchars($_POST['country'] ?? ''); ?>" placeholder="">
-      </div>
-
-      <div>
-        <label>Morada</label>
-        <input class="input" type="text" name="address" value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>" placeholder="">
-      </div>
-
-      <div class="form-row-2">
+        <div>
+          <label>E-mail <span class="required">*</span></label>
+          <input class="input" type="email" name="email" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" placeholder="ex: nome@dominio.com">
+        </div>
+        <div>
+          <label>Palavra-passe <span class="required">*</span></label>
+          <input class="input" type="password" id="password" name="password" required minlength="8" placeholder="Mínimo 8 caracteres">
+        </div>
+        <div>
+          <label>NIF <span class="required">*</span></label>
+          <input class="input" type="text" name="nif" pattern="\d{9}" placeholder="123456789" required value="<?php echo htmlspecialchars($_POST['nif'] ?? ''); ?>">
+        </div>
+        <div>
+          <label>País</label>
+          <input class="input" type="text" name="country" value="<?php echo htmlspecialchars($_POST['country'] ?? ''); ?>" placeholder="">
+        </div>
+        <div>
+          <label>Telemóvel</label>
+          <input class="input" type="text" name="phone" value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>" placeholder="">
+        </div>
+        <div>
+          <label>Morada</label>
+          <input class="input" type="text" name="address" value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>" placeholder="">
+        </div>
         <div>
           <label>Cidade</label>
           <input class="input" type="text" name="city" value="<?php echo htmlspecialchars($_POST['city'] ?? ''); ?>" placeholder="">
@@ -176,29 +177,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <label>Código Postal <span class="required">*</span></label>
           <input class="input" type="text" name="postal_code" pattern="\d{4}-\d{3}" placeholder="1234-567" required value="<?php echo htmlspecialchars($_POST['postal_code'] ?? ''); ?>">
         </div>
-      </div>
-
-      <div>
-        <label>Telemóvel</label>
-        <input class="input" type="text" name="phone" value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>" placeholder="">
-      </div>
-
-      <div>
-        <label>Tipo de Entidade <span class="required">*</span></label>
-        <select class="input" name="entity_type" required onchange="syncCompanyField()">
-          <option value="Singular" <?php echo ($_POST['entity_type'] ?? 'Singular') === 'Singular' ? 'selected' : ''; ?>>Pessoa Singular</option>
-          <option value="Coletiva" <?php echo ($_POST['entity_type'] ?? '') === 'Coletiva' ? 'selected' : ''; ?>>Pessoa Coletiva</option>
-        </select>
-      </div>
-
-      <div id="companyRow" style="display: none;">
-        <label>Nome da Empresa <span class="required">*</span></label>
-        <input class="input" type="text" name="company_name" id="company_name" value="<?php echo htmlspecialchars($_POST['company_name'] ?? ''); ?>" placeholder="">
-      </div>
-
-      <div>
-        <label>Palavra-passe <span class="required">*</span></label>
-        <input class="input" type="password" id="password" name="password" required minlength="8" placeholder="Mínimo 8 caracteres">
+        <div>
+          <label>Tipo de Entidade <span class="required">*</span></label>
+          <select class="input" name="entity_type" required onchange="syncCompanyField()">
+            <option value="Singular" <?php echo ($_POST['entity_type'] ?? 'Singular') === 'Singular' ? 'selected' : ''; ?>>Pessoa Singular</option>
+            <option value="Coletiva" <?php echo ($_POST['entity_type'] ?? '') === 'Coletiva' ? 'selected' : ''; ?>>Pessoa Coletiva</option>
+          </select>
+        </div>
+        <div id="companyRow" class="full" style="display: none;">
+          <label>Nome da Empresa <span class="required">*</span></label>
+          <input class="input" type="text" name="company_name" id="company_name" value="<?php echo htmlspecialchars($_POST['company_name'] ?? ''); ?>" placeholder="">
+        </div>
       </div>
 
       <div class="form-group checkbox-group">
