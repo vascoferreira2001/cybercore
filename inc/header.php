@@ -176,6 +176,9 @@ try {
         <a href="/dashboard.php" class="nav-item">
           <span class="icon">📊</span> Painel
         </a>
+        <a href="/profile.php" class="nav-item">
+          <span class="icon">👤</span> Perfil
+        </a>
         <a href="/support.php" class="nav-item">
           <span class="icon">🎧</span> Suporte
         </a>
