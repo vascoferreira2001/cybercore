@@ -2,7 +2,7 @@
   </main>
 </div>
 <?php endif; ?>
-<script src="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../' : ''; ?>assets/js/app.js"></script>
+<script src="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../' : ''; ?>assets/js/shared/app.js"></script>
 
 <?php
 // Footer - versão simplificada

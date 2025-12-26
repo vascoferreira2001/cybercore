@@ -16,7 +16,7 @@ unset($_SESSION['registration_email']);
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Registo Concluído - CyberCore</title>
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/shared/style.css">
 </head>
 <body>
 <main style="max-width:600px;margin:40px auto">

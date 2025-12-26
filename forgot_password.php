@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Recuperar Acesso - CyberCore</title>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/auth-modern.css">
+  <link rel="stylesheet" href="assets/css/auth/auth-modern.css">
 </head>
 <body class="auth" <?php echo $theme['backgroundStyle'] ? 'style="' . $theme['backgroundStyle'] . '"' : ''; ?>>
 <?php if ($maintenanceDisabled): ?>
