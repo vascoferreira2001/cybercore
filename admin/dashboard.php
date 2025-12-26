@@ -65,56 +65,35 @@ if (canAccessResource($pdo, $user, 'expenses', 'view')) {
 ?>
 <?php include __DIR__ . '/../inc/header.php'; ?>
 
-<div class="card">
-  <h2>Painel de Administração</h2>
-  <p>Bem-vindo ao painel administrativo, <?php echo htmlspecialchars($user['first_name']); ?>.</p>
-</div>
+<div class="shell single">
+  <div class="panel">
+    <div class="panel-header">
+      <h1>Painel de Administração</h1>
+      <p>Bem-vindo, <?php echo htmlspecialchars($user['first_name'].' '.$user['last_name']); ?>.</p>
+    </div>
 
-<div class="widgets">
-  <?php if ($user['role'] === 'Gestor'): ?>
-    <div class="widget">
-      <h4>Clientes</h4>
-      <p><?php echo $metrics['total_clients']; ?></p>
-    </div>
-    <div class="widget">
-      <h4>Tickets (Abertos)</h4>
-      <p><?php echo $metrics['open_tickets']; ?> / <?php echo $metrics['total_tickets']; ?></p>
-    </div>
-    <div class="widget">
-      <h4>Domínios</h4>
-      <p><?php echo $metrics['total_domains']; ?></p>
-    </div>
-    <div class="widget">
-      <h4>Faturas por Pagar</h4>
-      <p><?php echo $metrics['unpaid_invoices']; ?></p>
-    </div>
-  <?php elseif ($user['role'] === 'Suporte Financeira'): ?>
-    <div class="widget">
-      <h4>Total de Faturas</h4>
-      <p><?php echo $metrics['total_invoices']; ?></p>
-    </div>
-    <div class="widget">
-      <h4>Por Pagar</h4>
-      <p><?php echo $metrics['unpaid_invoices']; ?></p>
-    </div>
-    <div class="widget">
-      <h4>Pagas</h4>
-      <p><?php echo $metrics['paid_invoices']; ?></p>
-    </div>
-  <?php else: ?>
-    <div class="widget">
-      <h4>Tickets Abertos</h4>
-      <p><?php echo $metrics['open_tickets']; ?></p>
-    </div>
-    <div class="widget">
-      <h4>Tickets Pendentes</h4>
-      <p><?php echo $metrics['pending_tickets']; ?></p>
-    </div>
-    <div class="widget">
-      <h4>Clientes</h4>
-      <p><?php echo $metrics['total_clients']; ?></p>
-    </div>
-  <?php endif; ?>
+    <?php if ($user['role'] === 'Gestor'): ?>
+      <div class="metrics-grid">
+        <div class="metric-card"><div class="metric-title">Clientes</div><div class="metric-value"><?php echo $metrics['total_clients']; ?></div></div>
+        <div class="metric-card"><div class="metric-title">Tickets (Abertos/Total)</div><div class="metric-value"><?php echo $metrics['open_tickets']; ?> / <?php echo $metrics['total_tickets']; ?></div></div>
+        <div class="metric-card"><div class="metric-title">Domínios</div><div class="metric-value"><?php echo $metrics['total_domains']; ?></div></div>
+        <div class="metric-card"><div class="metric-title">Faturas por pagar</div><div class="metric-value"><?php echo $metrics['unpaid_invoices']; ?></div></div>
+      </div>
+    <?php elseif ($user['role'] === 'Suporte Financeira'): ?>
+      <div class="metrics-grid">
+        <div class="metric-card"><div class="metric-title">Total de Faturas</div><div class="metric-value"><?php echo $metrics['total_invoices']; ?></div></div>
+        <div class="metric-card"><div class="metric-title">Por Pagar</div><div class="metric-value"><?php echo $metrics['unpaid_invoices']; ?></div></div>
+        <div class="metric-card"><div class="metric-title">Pagas</div><div class="metric-value"><?php echo $metrics['paid_invoices']; ?></div></div>
+      </div>
+    <?php else: ?>
+      <div class="metrics-grid">
+        <div class="metric-card"><div class="metric-title">Tickets Abertos</div><div class="metric-value"><?php echo $metrics['open_tickets']; ?></div></div>
+        <div class="metric-card"><div class="metric-title">Tickets Pendentes</div><div class="metric-value"><?php echo $metrics['pending_tickets']; ?></div></div>
+        <div class="metric-card"><div class="metric-title">Clientes</div><div class="metric-value"><?php echo $metrics['total_clients']; ?></div></div>
+      </div>
+    <?php endif; ?>
+
+  </div>
 </div>
 
 <?php include __DIR__ . '/../inc/footer.php'; ?>
