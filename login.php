@@ -89,27 +89,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body class="auth" <?php echo $theme['backgroundStyle'] ? 'style="' . $theme['backgroundStyle'] . '"' : ''; ?>>
 
-<div class="shell">
-  <div class="hero">
-    <div>
+<div class="shell single">
+  <div class="panel">
+    <div class="panel-header">
       <div class="hero-header">
         <div class="hero-logo"><?php renderAuthLogo($theme['logoUrl']); ?></div>
       </div>
-
-      <p style="text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; color: var(--accent-2); font-weight: 700;">Aceda ao seu painel</p>
-      <h1 class="hero-title">Bem-vindo(a) à CyberCore</h1>
-      <p class="hero-subtitle">Faça login com o email ou o seu identificador para gerir os seus serviços, faturação e pedir suporte num só Painel.</p>
-
-      <ul class="hero-list">
-        <li><span class="check">✓</span> Login seguro com email ou CYC#ID</li>
-        <li><span class="check">✓</span> Autenticação rápida com sessão renovada</li>
-        <li><span class="check">✓</span> Monitorização de segurança e atividade</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-header">
       <h1>Entrar</h1>
       <p>Use o seu email ou identificador para continuar.</p>
     </div>
