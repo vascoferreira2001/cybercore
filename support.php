@@ -1,7 +1,13 @@
 <?php
+define('DASHBOARD_LAYOUT', true);
 require_once __DIR__ . '/inc/auth.php';
+require_once __DIR__ . '/inc/db.php';
 require_once __DIR__ . '/inc/csrf.php';
-requireRole(['Cliente','Suporte ao Cliente','Suporte Técnica','Gestor']);
+require_once __DIR__ . '/inc/dashboard_helper.php';
+
+checkRole(['Cliente','Suporte ao Cliente','Suporte Técnica','Gestor']);
+$user = currentUser();
+$GLOBALS['currentUser'] = $user;
 $pdo = getDB();
 $user = currentUser();
 $userId = $user['id'];
@@ -18,25 +24,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $tickets = $pdo->prepare('SELECT * FROM tickets WHERE user_id = ? ORDER BY created_at DESC');
 $tickets->execute([$userId]);
 $tickets = $tickets->fetchAll();
-?>
-<?php include __DIR__ . '/inc/header.php'; ?>
-<div class="card">
+
+$content = '<div class="card">
   <h2>Suporte - Tickets</h2>
   <form method="post">
-    <?php echo csrf_input(); ?>
+    ' . csrf_input() . '
     <div class="form-row"><label>Assunto</label><input type="text" name="subject" required></div>
     <div class="form-row"><label>Mensagem</label><textarea name="message" rows="5" required></textarea></div>
     <div class="form-row"><button class="btn">Abrir Ticket</button></div>
   </form>
 </div>
 <div class="card">
-  <h3>Meus Tickets</h3>
-  <?php if(empty($tickets)): ?>Nenhum ticket encontrado.<?php else: ?>
-    <ul>
-      <?php foreach($tickets as $t): ?>
-        <li><strong><?php echo htmlspecialchars($t['subject']); ?></strong> — <?php echo htmlspecialchars($t['status']); ?> <span class="small">(<?php echo $t['created_at']; ?>)</span></li>
-      <?php endforeach; ?>
-    </ul>
-  <?php endif; ?>
-</div>
-<?php include __DIR__ . '/inc/footer.php'; ?>
+  <h3>Meus Tickets</h3>';
+  if(empty($tickets)): 
+    $content .= '<p>Nenhum ticket encontrado.</p>';
+  else: 
+    $content .= '<ul>';
+    foreach($tickets as $t): 
+      $content .= '<li><strong>' . htmlspecialchars($t['subject']) . '</strong> — ' . htmlspecialchars($t['status']) . ' <span class="small">(' . $t['created_at'] . ')</span></li>';
+    endforeach;
+    $content .= '</ul>';
+  endif;
+$content .= '</div>';
+
+echo renderDashboardLayout('Suporte', 'Sistema de tickets e suporte técnico', $content, 'support');
+?>
+

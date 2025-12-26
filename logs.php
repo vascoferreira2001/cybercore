@@ -1,8 +1,14 @@
 <?php
+define('DASHBOARD_LAYOUT', true);
 require_once __DIR__ . '/inc/auth.php';
-requireRole(['Cliente','Suporte Financeira','Gestor']);
-$pdo = getDB();
+require_once __DIR__ . '/inc/db.php';
+require_once __DIR__ . '/inc/dashboard_helper.php';
+
+checkRole(['Cliente','Suporte Financeira','Gestor']);
 $user = currentUser();
+$GLOBALS['currentUser'] = $user;
+$pdo = getDB();
+
 if (in_array($user['role'], ['Suporte Financeira','Gestor'])) {
   $stmt = $pdo->query('SELECT l.*, u.email AS owner_email FROM logs l LEFT JOIN users u ON l.user_id = u.id ORDER BY l.created_at DESC');
   $logs = $stmt->fetchAll();
@@ -11,16 +17,19 @@ if (in_array($user['role'], ['Suporte Financeira','Gestor'])) {
   $stmt->execute([$user['id']]);
   $logs = $stmt->fetchAll();
 }
+
+$content = '<div class="card">
+  <h2>Logs</h2>';
+if(empty($logs)): 
+  $content .= '<p>Sem logs recentes.</p>';
+else: 
+  $content .= '<ul>';
+  foreach($logs as $l): 
+    $content .= '<li><strong>' . htmlspecialchars($l['type']) . '</strong>: ' . htmlspecialchars($l['message']) . ' <span class="small">(' . $l['created_at'] . ')</span></li>';
+  endforeach;
+  $content .= '</ul>';
+endif;
+$content .= '</div>';
+
+echo renderDashboardLayout('Logs', 'Histórico de atividades do sistema', $content, 'logs');
 ?>
-<?php include __DIR__ . '/inc/header.php'; ?>
-<div class="card">
-  <h2>Logs</h2>
-  <?php if(empty($logs)): ?>Sem logs recentes.<?php else: ?>
-    <ul>
-      <?php foreach($logs as $l): ?>
-        <li><strong><?php echo htmlspecialchars($l['type']); ?></strong>: <?php echo htmlspecialchars($l['message']); ?> <span class="small">(<?php echo $l['created_at']; ?>)</span></li>
-      <?php endforeach; ?>
-    </ul>
-  <?php endif; ?>
-</div>
-<?php include __DIR__ . '/inc/footer.php'; ?>

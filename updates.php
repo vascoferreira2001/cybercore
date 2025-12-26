@@ -1,18 +1,17 @@
 <?php
+define('DASHBOARD_LAYOUT', true);
 require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/db.php';
+require_once __DIR__ . '/inc/dashboard_helper.php';
 
-// Esta página é visível para todos os utilizadores (autenticados)
-requireLogin();
+checkRole(['Cliente','Suporte ao Cliente','Suporte Financeiro','Suporte Técnica','Gestor']);
 $user = currentUser();
+$GLOBALS['currentUser'] = $user;
 $pdo = getDB();
-?>
-<?php include __DIR__ . '/inc/header.php'; ?>
 
-<div class="card">
-  <h2>📋 Histórico de Atualizações do Sistema</h2>
-  
-  <p style="color:#666;margin:16px 0">Aqui encontra um registo completo de todas as atualizações realizadas no CyberCore.</p>
+$content = '<div class="card">
+  <h2>Histórico de Atualizações do Sistema</h2>
+  <p style="color:#666;margin:16px 0">Aqui encontra um registo completo de todas as atualizações realizadas no CyberCore.</p>';
   
   <?php
   try {
@@ -52,5 +51,3 @@ $pdo = getDB();
   }
   ?>
 </div>
-
-<?php include __DIR__ . '/inc/footer.php'; ?>

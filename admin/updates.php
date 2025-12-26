@@ -1,17 +1,14 @@
 <?php
+define('DASHBOARD_LAYOUT', true);
 require_once __DIR__ . '/../inc/auth.php';
 require_once __DIR__ . '/../inc/db.php';
 require_once __DIR__ . '/../inc/csrf.php';
+require_once __DIR__ . '/../inc/dashboard_helper.php';
 require_once __DIR__ . '/../inc/settings.php';
 
-// Esta página é visível apenas para staff (admin roles)
-requireLogin();
+checkRole(['Gestor','Suporte ao Cliente','Suporte Técnica','Suporte Financeira']);
 $user = currentUser();
-if (!in_array($user['role'], ['Gestor','Suporte ao Cliente','Suporte Técnica','Suporte Financeira'])) {
-    http_response_code(403);
-    echo 'Acesso negado.';
-    exit;
-}
+$GLOBALS['currentUser'] = $user;
 
 $pdo = getDB();
 $message = '';
@@ -45,9 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user['role'] === 'Gestor') {
         }
     }
 }
-?>
-<?php include __DIR__ . '/../inc/header.php'; ?>
 
+// Construir conteúdo
+ob_start();
+?>
 <div class="card">
   <h2>⬆️ Gerenciamento de Atualizações</h2>
   
@@ -133,5 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user['role'] === 'Gestor') {
   }
   ?>
 </div>
-
-<?php include __DIR__ . '/../inc/footer.php'; ?>
+<?php
+$content = ob_get_clean();
+echo renderDashboardLayout('Atualizações', 'Gerenciamento de versões e changelog', $content, 'updates');
+?>

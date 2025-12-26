@@ -1,12 +1,17 @@
 <?php
-require_once __DIR__ . '/inc/config.php';
+define('DASHBOARD_LAYOUT', true);
+require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/db.php';
-if (session_status() === PHP_SESSION_NONE) session_start();
-if (empty($_SESSION['user_id'])) { header('Location: login.php'); exit; }
-?>
-<?php include __DIR__ . '/inc/header.php'; ?>
-<div class="card">
+require_once __DIR__ . '/inc/dashboard_helper.php';
+
+checkRole(['Cliente','Suporte ao Cliente','Suporte Financeiro','Suporte Técnica','Gestor']);
+$user = currentUser();
+$GLOBALS['currentUser'] = $user;
+
+$content = '<div class="card">
   <h2>Alojamento</h2>
-  <p>Página placeholder para planos de alojamento e gestão.</p>
-</div>
-<?php include __DIR__ . '/inc/footer.php'; ?>
+  <p>Página em desenvolvimento. Em breve poderá consultar planos de alojamento aqui.</p>
+</div>';
+
+echo renderDashboardLayout('Alojamento', 'Gestão de planos de alojamento', $content, 'hosting');
+?>

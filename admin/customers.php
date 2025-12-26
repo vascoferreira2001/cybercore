@@ -1,13 +1,13 @@
 <?php
+define('DASHBOARD_LAYOUT', true);
 require_once __DIR__ . '/../inc/auth.php';
 require_once __DIR__ . '/../inc/db.php';
+require_once __DIR__ . '/../inc/dashboard_helper.php';
 require_once __DIR__ . '/../inc/permissions.php';
 
-requireLogin();
+checkRole(['Gestor','Suporte ao Cliente']);
 $user = currentUser();
-
-// Validar acesso ao recurso Clientes
-// requirePermission($pdo, $user, 'customers', 'view'); // Descomente para validar
+$GLOBALS['currentUser'] = $user;
 
 $pdo = getDB();
 $accessLevel = getAccessLevel($pdo, $user, 'customers');
@@ -24,26 +24,25 @@ $canManage = in_array($accessLevel, ['all', 'manage_all', 'manage_own_clients', 
 $canViewAll = in_array($accessLevel, ['all', 'view_all', 'manage_all']);
 $viewOwnOnly = in_array($accessLevel, ['own', 'manage_own_clients']);
 
+$levels = [
+    'all' => 'Acesso total',
+    'manage_all' => 'Gerir todos',
+    'view_all' => 'Ver todos (apenas leitura)',
+    'manage_own_clients' => 'Gerir clientes próprios',
+    'own' => 'Ver clientes próprios',
+    'readonly' => 'Apenas leitura',
+    'specific' => 'Grupos específicos'
+];
+
+ob_start();
 ?>
-<?php include __DIR__ . '/../inc/header.php'; ?>
 <div class="card">
   <h2>Clientes</h2>
   
   <?php if ($accessLevel): ?>
     <div style="margin-bottom:16px;padding:12px;background:#e3f2fd;border-radius:4px">
       <strong>Seu nível de acesso:</strong> 
-      <?php 
-        $levels = [
-          'all' => 'Acesso total',
-          'manage_all' => 'Gerir todos',
-          'view_all' => 'Ver todos (apenas leitura)',
-          'manage_own_clients' => 'Gerir clientes próprios',
-          'own' => 'Ver clientes próprios',
-          'readonly' => 'Apenas leitura',
-          'specific' => 'Grupos específicos'
-        ];
-        echo htmlspecialchars($levels[$accessLevel] ?? $accessLevel);
-      ?>
+      <?php echo htmlspecialchars($levels[$accessLevel] ?? $accessLevel); ?>
     </div>
   <?php endif; ?>
   
@@ -54,4 +53,7 @@ $viewOwnOnly = in_array($accessLevel, ['own', 'manage_own_clients']);
   <p>Gestão de clientes — em desenvolvimento.</p>
   <p><small>Nota: O nível de acesso está a ser validado baseado nas permissões configuradas em Configuração > Funções da Equipa.</small></p>
 </div>
-<?php include __DIR__ . '/../inc/footer.php'; ?>
+<?php
+$content = ob_get_clean();
+echo renderDashboardLayout('Clientes', 'Gestão de clientes', $content, 'customers');
+?>

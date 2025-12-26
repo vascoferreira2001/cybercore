@@ -1,17 +1,18 @@
 <?php
-define('DASHBOARD_LAYOUT', true);
-require_once __DIR__ . '/inc/auth.php';
-require_once __DIR__ . '/inc/db.php';
+/**
+ * CyberCore Dashboard Layout Helper
+ * Gera estrutura consistente de sidebar + topbar + main content
+ */
 
-checkRole(['Cliente','Suporte ao Cliente','Suporte Financeiro','Suporte Técnica','Gestor']);
-$user = currentUser();
-?>
+function renderDashboardLayout($pageTitle, $pageSubtitle, $content, $sidebarActive = null) {
+  ob_start();
+  ?>
 <!DOCTYPE html>
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Serviços - CyberCore</title>
+  <title><?php echo htmlspecialchars($pageTitle); ?> - CyberCore</title>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/pages/dashboard-modern.css">
 </head>
@@ -43,7 +44,7 @@ $user = currentUser();
     </div>
 
     <nav class="sidebar-nav">
-      <a href="/dashboard.php" class="nav-item">
+      <a href="/dashboard.php" class="nav-item <?php echo ($sidebarActive === 'dashboard') ? 'active' : ''; ?>">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="7"></rect>
           <rect x="14" y="3" width="7" height="7"></rect>
@@ -53,14 +54,14 @@ $user = currentUser();
         <span>Dashboard</span>
       </a>
 
-      <a href="/services.php" class="nav-item active">
+      <a href="/services.php" class="nav-item <?php echo ($sidebarActive === 'services') ? 'active' : ''; ?>">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
         </svg>
         <span>Serviços</span>
       </a>
 
-      <a href="/finance.php" class="nav-item">
+      <a href="/finance.php" class="nav-item <?php echo ($sidebarActive === 'finance') ? 'active' : ''; ?>">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="5" width="20" height="14" rx="2"></rect>
           <line x1="2" y1="10" x2="22" y2="10"></line>
@@ -68,14 +69,14 @@ $user = currentUser();
         <span>Faturação</span>
       </a>
 
-      <a href="/support.php" class="nav-item">
+      <a href="/support.php" class="nav-item <?php echo ($sidebarActive === 'support') ? 'active' : ''; ?>">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
         <span>Suporte</span>
       </a>
 
-      <a href="/domains.php" class="nav-item">
+      <a href="/domains.php" class="nav-item <?php echo ($sidebarActive === 'domains') ? 'active' : ''; ?>">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"></circle>
           <line x1="2" y1="12" x2="22" y2="12"></line>
@@ -121,11 +122,11 @@ $user = currentUser();
       <div class="topbar-right">
         <a class="user-menu" href="/profile.php" aria-label="Abrir perfil do utilizador">
           <div class="user-info">
-            <span class="user-name"><?php echo htmlspecialchars(trim($user['first_name'] . ' ' . $user['last_name']) ?: $user['email']); ?></span>
-            <span class="user-id">CYC#<?php echo str_pad($user['id'], 5, '0', STR_PAD_LEFT); ?></span>
+            <span class="user-name"><?php echo htmlspecialchars(isset($GLOBALS['currentUser']) ? (trim($GLOBALS['currentUser']['first_name'] . ' ' . $GLOBALS['currentUser']['last_name']) ?: $GLOBALS['currentUser']['email']) : 'Utilizador'); ?></span>
+            <span class="user-id">CYC#<?php echo isset($GLOBALS['currentUser']) ? str_pad($GLOBALS['currentUser']['id'], 5, '0', STR_PAD_LEFT) : '00000'; ?></span>
           </div>
-          <div class="user-avatar" title="<?php echo htmlspecialchars($user['email']); ?>">
-            <?php echo strtoupper(substr($user['first_name'], 0, 1)); ?>
+          <div class="user-avatar" title="<?php echo htmlspecialchars(isset($GLOBALS['currentUser']) ? $GLOBALS['currentUser']['email'] : ''); ?>">
+            <?php echo isset($GLOBALS['currentUser']) ? strtoupper(substr($GLOBALS['currentUser']['first_name'], 0, 1)) : 'U'; ?>
           </div>
         </a>
       </div>
@@ -135,15 +136,12 @@ $user = currentUser();
     <main class="dashboard-content">
       <div class="dashboard-header">
         <div>
-          <h1 class="page-title">Serviços</h1>
-          <p class="page-subtitle">Gestão de serviços e suporte</p>
+          <h1 class="page-title"><?php echo htmlspecialchars($pageTitle); ?></h1>
+          <p class="page-subtitle"><?php echo htmlspecialchars($pageSubtitle); ?></p>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Serviços Contratados</h2>
-        <p>Página em desenvolvimento. Em breve poderá gerir todos os seus serviços aqui.</p>
-      </div>
+      <?php echo $content; ?>
     </main>
 
     <!-- Footer -->
@@ -154,3 +152,6 @@ $user = currentUser();
 
 </body>
 </html>
+  <?php
+  return ob_get_clean();
+}

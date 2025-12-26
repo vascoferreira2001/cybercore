@@ -1,20 +1,16 @@
 <?php
+define('DASHBOARD_LAYOUT', true);
 require_once __DIR__ . '/../inc/auth.php';
 require_once __DIR__ . '/../inc/db.php';
 require_once __DIR__ . '/../inc/csrf.php';
+require_once __DIR__ . '/../inc/dashboard_helper.php';
 require_once __DIR__ . '/../inc/settings.php';
 require_once __DIR__ . '/../inc/mailer.php';
 require_once __DIR__ . '/../inc/email_templates.php';
 
-requireLogin();
+checkRole(['Gestor']);
 $user = currentUser();
-
-// Apenas Gestor pode aceder
-if ($user['role'] !== 'Gestor') {
-  http_response_code(403);
-  echo 'Acesso negado.';
-  exit;
-}
+$GLOBALS['currentUser'] = $user;
 
 $pdo = getDB();
 $message = '';
@@ -525,7 +521,7 @@ $siteLogoPath = getAssetPath($siteLogo);
 $faviconPath = getAssetPath($favicon);
 $loginBackgroundPath = getAssetPath($loginBackground);
 ?>
-<?php include __DIR__ . '/../inc/header.php'; ?>
+<?php ob_start(); ?>
 
 <div class="card">
   <h2>Configurações do Sistema</h2>
@@ -1590,4 +1586,7 @@ $loginBackgroundPath = getAssetPath($loginBackground);
   
 </div>
 
-<?php include __DIR__ . '/../inc/footer.php'; ?>
+<?php
+$content = ob_get_clean();
+echo renderDashboardLayout('Configurações', 'Configurações do sistema', $content, 'settings');
+?>
