@@ -46,7 +46,7 @@ body.auth {
 
 .hero {
   padding: 34px;
-  background: linear-gradient(145deg, rgba(37, 99, 235, 0.12), rgba(11, 18, 36, 0.85));
+  background: linear-gradient(135deg, #1e3a8a, #1e40af);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -251,6 +251,51 @@ label {
 }
 
 .divider { margin: 8px 0 4px; color: #999999; font-size: 12px; text-align: center; }
+
+.info-text {
+  color: #1a1a1a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.form-group.checkbox-group {
+  margin-top: 6px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.checkbox-item input[type="checkbox"] {
+  margin-top: 4px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.checkbox-item label {
+  display: inline;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #333333;
+  font-size: 14px;
+  margin-bottom: 0;
+}
+
+.checkbox-item a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.checkbox-item a:hover {
+  text-decoration: underline;
+}
+
+.required {
+  color: #d97706;
+}
 
 .footer { text-align: center; color: #999999; font-size: 12px; margin-top: 18px; }
 .footer a { color: #2563eb; text-decoration: none; }
