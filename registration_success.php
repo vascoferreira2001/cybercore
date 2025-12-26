@@ -20,7 +20,7 @@ unset($_SESSION['registration_email']);
   <link rel="stylesheet" href="assets/css/shared/design-system.css">
 </head>
 <body class="auth">
-  <div class="shell single" role="main">
+  <div class="shell" role="main">
     <div class="hero" aria-hidden="true">
       <div class="hero-header">
         <div class="check" style="font-size: 24px;">✓</div>
