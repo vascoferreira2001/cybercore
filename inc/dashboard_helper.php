@@ -4,7 +4,26 @@
  * Gera estrutura consistente de sidebar + topbar + main content
  */
 
+require_once __DIR__ . '/menu_config.php';
+
 function renderDashboardLayout($pageTitle, $pageSubtitle, $content, $sidebarActive = null) {
+  // Obter usuário atual
+  $user = isset($GLOBALS['currentUser']) ? $GLOBALS['currentUser'] : null;
+  
+  if (!$user) {
+    // Fallback para sessão
+    require_once __DIR__ . '/auth.php';
+    $user = currentUser();
+  }
+  
+  if (!$user) {
+    header('Location: /login.php');
+    exit;
+  }
+  
+  // Obter menu items baseado no cargo
+  $menuItems = getMenuItemsByRole($user['role']);
+  
   ob_start();
   ?>
 <!DOCTYPE html>
@@ -44,54 +63,25 @@ function renderDashboardLayout($pageTitle, $pageSubtitle, $content, $sidebarActi
     </div>
 
     <nav class="sidebar-nav">
-      <a href="/dashboard.php" class="nav-item <?php echo ($sidebarActive === 'dashboard') ? 'active' : ''; ?>">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7"></rect>
-          <rect x="14" y="3" width="7" height="7"></rect>
-          <rect x="14" y="14" width="7" height="7"></rect>
-          <rect x="3" y="14" width="7" height="7"></rect>
-        </svg>
-        <span>Dashboard</span>
-      </a>
-
-      <a href="/services.php" class="nav-item <?php echo ($sidebarActive === 'services') ? 'active' : ''; ?>">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-        </svg>
-        <span>Serviços</span>
-      </a>
-
-      <a href="/finance.php" class="nav-item <?php echo ($sidebarActive === 'finance') ? 'active' : ''; ?>">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-          <line x1="2" y1="10" x2="22" y2="10"></line>
-        </svg>
-        <span>Faturação</span>
-      </a>
-
-      <a href="/support.php" class="nav-item <?php echo ($sidebarActive === 'support') ? 'active' : ''; ?>">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-        <span>Suporte</span>
-      </a>
-
-      <a href="/domains.php" class="nav-item <?php echo ($sidebarActive === 'domains') ? 'active' : ''; ?>">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="2" y1="12" x2="22" y2="12"></line>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-        </svg>
-        <span>Domínios</span>
-      </a>
+      <?php foreach ($menuItems as $item): ?>
+        <?php if (isset($item['type']) && $item['type'] === 'divider'): ?>
+          <div class="nav-divider"><?php echo htmlspecialchars($item['label']); ?></div>
+        <?php else: ?>
+          <a href="<?php echo htmlspecialchars($item['url']); ?>" 
+             class="nav-item <?php echo ($sidebarActive === $item['key']) ? 'active' : ''; ?>">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <?php echo getMenuIcon($item['icon']); ?>
+            </svg>
+            <span><?php echo htmlspecialchars($item['label']); ?></span>
+          </a>
+        <?php endif; ?>
+      <?php endforeach; ?>
     </nav>
 
     <div class="sidebar-footer">
       <a href="/logout.php" class="nav-item logout-btn">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
+          <?php echo getMenuIcon('logout'); ?>
         </svg>
         <span>Sair</span>
       </a>
