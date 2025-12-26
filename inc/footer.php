@@ -1,5 +1,7 @@
+<?php if (defined('DASHBOARD_LAYOUT') && DASHBOARD_LAYOUT === true): ?>
   </main>
 </div>
+<?php endif; ?>
 <script src="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../' : ''; ?>assets/js/app.js"></script>
 
 <?php

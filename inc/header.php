@@ -47,14 +47,17 @@ try {
   <link rel="stylesheet" href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../assets/css/style.css' : 'assets/css/style.css'; ?>">
   <?php $base = (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../' : ''; ?>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<?php echo $base; ?>assets/css/design-system.css">
   <link rel="stylesheet" href="<?php echo $base; ?>assets/css/auth-modern.css">
   <?php if ($faviconPath && file_exists($faviconPath)): ?>
     <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($faviconUrl); ?>?v=<?php echo time(); ?>">
   <?php endif; ?>
 </head>
-<body class="dashboard">
-<div class="app">
-  <aside class="sidebar">
+<?php $useDashboard = (defined('DASHBOARD_LAYOUT') && DASHBOARD_LAYOUT === true); ?>
+<body class="<?php echo $useDashboard ? 'dashboard' : ''; ?>">
+<?php if ($useDashboard): ?>
+<div class="dashboard-app">
+  <aside class="dashboard-sidebar">
     <div class="brand">
       <?php if ($siteLogoPath && file_exists($siteLogoPath)): ?>
         <img src="<?php echo htmlspecialchars($siteLogoUrl); ?>?v=<?php echo time(); ?>" alt="Logo" style="max-width:150px;height:auto">
@@ -189,7 +192,7 @@ try {
     </nav>
     <div class="logout"><a href="/logout.php">Logout</a></div>
   </aside>
-  <main class="content">
+  <main class="dashboard-content">
     <?php
       // Notificações simples (contagem por papel)
       $notifCount = 0;
@@ -217,26 +220,30 @@ try {
         }
       } catch (Throwable $e) { $notifCount = 0; }
     ?>
-    <div class="topbar">
+    <div class="dashboard-topbar">
       <div class="topbar-left">
         <span class="topbar-title">CyberCore</span>
       </div>
       <div class="topbar-right">
-        <form class="topbar-search" action="search.php" method="get">
+        <form class="topbar-search" action="/search.php" method="get">
           <input type="text" name="q" placeholder="Pesquisar…">
           <button type="submit" class="icon-btn" aria-label="Pesquisar">🔎</button>
         </form>
-        <div class="icon-btn bell" title="Notificações">
+        <button class="icon-btn bell" title="Notificações" type="button">
           🔔
           <?php if ($notifCount > 0): ?>
             <span class="badge"><?php echo (int)$notifCount; ?></span>
           <?php endif; ?>
-        </div>
+        </button>
         <?php if ($cu): ?>
           <div class="user-chip">
             <span class="avatar"><?php echo strtoupper(substr($cu['first_name'],0,1)); ?></span>
-            <span class="name"><?php echo htmlspecialchars($cu['first_name'].' '.$cu['last_name']); ?></span>
+            <span class="name"><?php 
+              $displayName = !empty($cu['company_name']) ? $cu['company_name'] : ($cu['first_name'].' '.$cu['last_name']);
+              echo htmlspecialchars($displayName);
+            ?></span>
           </div>
         <?php endif; ?>
       </div>
     </div>
+<?php endif; ?>

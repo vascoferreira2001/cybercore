@@ -63,6 +63,7 @@ if (canAccessResource($pdo, $user, 'expenses', 'view')) {
 }
 
 ?>
+<?php define('DASHBOARD_LAYOUT', true); ?>
 <?php include __DIR__ . '/../inc/header.php'; ?>
 
 <div class="shell single">
