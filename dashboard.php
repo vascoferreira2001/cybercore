@@ -84,101 +84,154 @@ try {
 <?php define('DASHBOARD_LAYOUT', true); ?>
 <?php include __DIR__ . '/inc/header.php'; ?>
 
-<div class="shell single">
-  <div class="panel">
-    <div class="panel-header">
-      <h1>Painel</h1>
-      <p>Bem-vindo, <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?> · ID <?php echo $cwc; ?></p>
+<div class="dashboard-page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">Painel</h1>
+      <p class="page-subtitle">Bem-vindo, <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?> · ID <?php echo $cwc; ?></p>
     </div>
-
-    <div class="section-title">Ações rápidas</div>
-    <div class="actions">
-      <?php foreach ($actions as $a): $cls = !empty($a['primary']) ? 'action-btn primary' : 'action-btn'; ?>
-        <a class="<?php echo $cls; ?>" href="<?php echo htmlspecialchars($a['href']); ?>"><?php echo htmlspecialchars($a['label']); ?></a>
-      <?php endforeach; ?>
+    <div class="page-header-right">
+      <a href="/support.php" class="btn btn-secondary btn-sm"><span class="icon">📋</span> Ver Tickets</a>
+      <?php if ($user['role'] === 'Gestor'): ?>
+        <a href="/admin/services.php" class="btn btn-primary btn-sm"><span class="icon">➕</span> Novo Serviço</a>
+      <?php else: ?>
+        <a href="/support.php" class="btn btn-primary btn-sm"><span class="icon">➕</span> Abrir Ticket</a>
+      <?php endif; ?>
     </div>
+  </div>
 
+  <!-- Metrics Overview -->
+  <div class="metrics-grid">
     <?php if ($user['role'] === 'Gestor'): ?>
-      <div class="metrics-grid">
-        <div class="metric-card">
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #e0f2fe;"><span style="color: #0284c7;">👥</span></div>
+        <div class="metric-content">
           <div class="metric-title">Utilizadores</div>
           <div class="metric-value"><?php echo $metrics['users_total']; ?></div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-title">Domínios</div>
-          <div class="metric-value"><?php echo $metrics['domains_total']; ?></div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-title">Faturas por pagar</div>
-          <div class="metric-value"><?php echo $metrics['invoices_unpaid']; ?></div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-title">Tickets abertos</div>
-          <div class="metric-value"><?php echo $metrics['tickets_open']; ?></div>
+          <div class="metric-subtitle">0 total</div>
         </div>
       </div>
-      <div class="info-text">Utilize o menu lateral para aceder às áreas detalhadas.</div>
-    <?php elseif ($user['role'] === 'Suporte Financeira'): ?>
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-title">Total de faturas</div>
-          <div class="metric-value"><?php echo $metrics['invoices_total']; ?></div>
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #dcfce7;"><span style="color: #16a34a;">🌐</span></div>
+        <div class="metric-content">
+          <div class="metric-title">Domínios</div>
+          <div class="metric-value"><?php echo $metrics['domains_total']; ?></div>
+          <div class="metric-subtitle">Total registados</div>
         </div>
-        <div class="metric-card">
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #fef3c7;"><span style="color: #d97706;">💰</span></div>
+        <div class="metric-content">
           <div class="metric-title">Faturas por pagar</div>
           <div class="metric-value"><?php echo $metrics['invoices_unpaid']; ?></div>
+          <div class="metric-subtitle">Pendentes</div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #ede9fe;"><span style="color: #7c3aed;">🎫</span></div>
+        <div class="metric-content">
+          <div class="metric-title">Tickets abertos</div>
+          <div class="metric-value"><?php echo $metrics['tickets_open']; ?></div>
+          <div class="metric-subtitle">Requerem atenção</div>
+        </div>
+      </div>
+    <?php elseif ($user['role'] === 'Suporte Financeira'): ?>
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #e0f2fe;"><span style="color: #0284c7;">📊</span></div>
+        <div class="metric-content">
+          <div class="metric-title">Total de faturas</div>
+          <div class="metric-value"><?php echo $metrics['invoices_total']; ?></div>
+          <div class="metric-subtitle">Todas as faturas</div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #fef3c7;"><span style="color: #d97706;">⚠️</span></div>
+        <div class="metric-content">
+          <div class="metric-title">Faturas por pagar</div>
+          <div class="metric-value"><?php echo $metrics['invoices_unpaid']; ?></div>
+          <div class="metric-subtitle">Pendentes</div>
         </div>
       </div>
     <?php elseif (in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])): ?>
-      <div class="metrics-grid">
-        <div class="metric-card">
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #ede9fe;"><span style="color: #7c3aed;">🎫</span></div>
+        <div class="metric-content">
           <div class="metric-title">Tickets abertos</div>
           <div class="metric-value"><?php echo $metrics['tickets_open']; ?></div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-title">Domínios total</div>
-          <div class="metric-value"><?php echo $metrics['domains_total']; ?></div>
+          <div class="metric-subtitle">Requerem atenção</div>
         </div>
       </div>
-      <div class="info-text">Aceda a Suporte para gerir tickets.</div>
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #dcfce7;"><span style="color: #16a34a;">🌐</span></div>
+        <div class="metric-content">
+          <div class="metric-title">Domínios total</div>
+          <div class="metric-value"><?php echo $metrics['domains_total']; ?></div>
+          <div class="metric-subtitle">Geridos</div>
+        </div>
+      </div>
     <?php else: ?>
-      <div class="metrics-grid">
-        <div class="metric-card">
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #dcfce7;"><span style="color: #16a34a;">✅</span></div>
+        <div class="metric-content">
           <div class="metric-title">Serviços Ativos</div>
           <div class="metric-value"><?php echo $metrics['total_services']; ?></div>
+          <div class="metric-subtitle">A funcionar</div>
         </div>
-        <div class="metric-card">
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #e0f2fe;"><span style="color: #0284c7;">🌐</span></div>
+        <div class="metric-content">
           <div class="metric-title">Domínios Ativos</div>
           <div class="metric-value"><?php echo $metrics['my_services_active']; ?></div>
+          <div class="metric-subtitle">Registados</div>
         </div>
-        <div class="metric-card">
-          <div class="metric-title">Avisos de Pagamento em Atraso</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #fee2e2;"><span style="color: #dc2626;">⚠️</span></div>
+        <div class="metric-content">
+          <div class="metric-title">Pagamentos em Atraso</div>
           <div class="metric-value"><?php echo $metrics['overdue_invoices']; ?></div>
+          <div class="metric-subtitle">Requerem atenção</div>
         </div>
-        <div class="metric-card">
-          <div class="metric-title">Pedidos de Suporte</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon" style="background: #ede9fe;"><span style="color: #7c3aed;">🎫</span></div>
+        <div class="metric-content">
+          <div class="metric-title">Tickets Abertos</div>
           <div class="metric-value"><?php echo $metrics['my_tickets_active']; ?></div>
+          <div class="metric-subtitle">Pedidos ativos</div>
         </div>
       </div>
     <?php endif; ?>
+  </div>
 
-    <div class="section-title">Atividade recente</div>
-    <div class="activity-list">
+  <!-- Recent Activity Section -->
+  <div class="dashboard-section">
+    <div class="section-header">
+      <h2 class="section-title"><span class="icon">📋</span> Atividade Recente</h2>
+      <a href="/logs.php" class="view-all-link">Ver tudo <span class="arrow">→</span></a>
+    </div>
+    <div class="dashboard-card">
       <?php if (empty($activities)): ?>
-        <div class="activity-item"><div>Sem atividade recente.</div></div>
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>Sem atividade recente.</p>
+        </div>
       <?php else: ?>
-        <?php foreach ($activities as $act): ?>
-          <div class="activity-item">
-            <div>
-              <strong><?php echo htmlspecialchars($act['type']); ?></strong> — <?php echo htmlspecialchars($act['message']); ?>
+        <div class="activity-list">
+          <?php foreach ($activities as $act): ?>
+            <div class="activity-item">
+              <div class="activity-content">
+                <strong><?php echo htmlspecialchars($act['type']); ?></strong> — <?php echo htmlspecialchars($act['message']); ?>
+              </div>
+              <div class="activity-meta"><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($act['created_at']))); ?></div>
             </div>
-            <div class="meta"><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($act['created_at']))); ?></div>
-          </div>
-        <?php endforeach; ?>
+          <?php endforeach; ?>
+        </div>
       <?php endif; ?>
     </div>
-
   </div>
+
 </div>
 
 <?php include __DIR__ . '/inc/footer.php'; ?>
