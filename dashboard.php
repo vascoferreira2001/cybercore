@@ -44,55 +44,79 @@ if ($user['role'] === 'Gestor') {
 ?>
 <?php include __DIR__ . '/inc/header.php'; ?>
 
-<div class="card">
-  <h2>Dashboard</h2>
-  <p><strong>Cliente:</strong> <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></p>
-  <p><strong>ID Cliente:</strong> <?php echo $cwc; ?></p>
-  <p class="small">Bem-vindo. O painel abaixo mostra apenas o que é relevante para o seu papel.</p>
-</div>
+<div class="shell single">
+  <div class="panel">
+    <div class="panel-header">
+      <h1>Painel</h1>
+      <p>Bem-vindo, <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?> · ID <?php echo $cwc; ?></p>
+    </div>
 
-<?php if ($user['role'] === 'Gestor'): ?>
-  <div class="card">
-    <h3>Visão Geral (Gestor)</h3>
-    <p>Utilizadores: <?php echo $metrics['users_total']; ?></p>
-    <p>Domínios: <?php echo $metrics['domains_total']; ?></p>
-    <p>Faturas por pagar: <?php echo $metrics['invoices_unpaid']; ?></p>
-    <p>Tickets abertos: <?php echo $metrics['tickets_open']; ?></p>
-    <p class="small">Utilize o menu para aceder às áreas detalhadas.</p>
+    <?php if ($user['role'] === 'Gestor'): ?>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-title">Utilizadores</div>
+          <div class="metric-value"><?php echo $metrics['users_total']; ?></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Domínios</div>
+          <div class="metric-value"><?php echo $metrics['domains_total']; ?></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Faturas por pagar</div>
+          <div class="metric-value"><?php echo $metrics['invoices_unpaid']; ?></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Tickets abertos</div>
+          <div class="metric-value"><?php echo $metrics['tickets_open']; ?></div>
+        </div>
+      </div>
+      <div class="info-text">Utilize o menu lateral para aceder às áreas detalhadas.</div>
+    <?php elseif ($user['role'] === 'Suporte Financeira'): ?>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-title">Total de faturas</div>
+          <div class="metric-value"><?php echo $metrics['invoices_total']; ?></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Faturas por pagar</div>
+          <div class="metric-value"><?php echo $metrics['invoices_unpaid']; ?></div>
+        </div>
+      </div>
+    <?php elseif (in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])): ?>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-title">Tickets abertos</div>
+          <div class="metric-value"><?php echo $metrics['tickets_open']; ?></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Domínios total</div>
+          <div class="metric-value"><?php echo $metrics['domains_total']; ?></div>
+        </div>
+      </div>
+      <div class="info-text">Aceda a Suporte para gerir tickets.</div>
+    <?php else: ?>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-title">Serviços Ativos</div>
+          <div class="metric-value"><?php echo $metrics['total_services']; ?></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Domínios Ativos</div>
+          <div class="metric-value"><?php echo $metrics['my_services_active']; ?></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Avisos de Pagamento em Atraso</div>
+          <div class="metric-value"><?php echo $metrics['overdue_invoices']; ?></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Pedidos de Suporte</div>
+          <div class="metric-value"><?php echo $metrics['my_tickets_active']; ?></div>
+        </div>
+      </div>
+    <?php endif; ?>
+
   </div>
-<?php elseif ($user['role'] === 'Suporte Financeira'): ?>
-  <div class="card">
-    <h3>Financeiro (Suporte Financeira)</h3>
-    <p>Total de faturas: <?php echo $metrics['invoices_total']; ?></p>
-    <p>Faturas por pagar: <?php echo $metrics['invoices_unpaid']; ?></p>
-  </div>
-<?php elseif (in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])): ?>
-  <div class="card">
-    <h3>Suporte</h3>
-    <p>Tickets abertos: <?php echo $metrics['tickets_open']; ?></p>
-    <p>Domínios total: <?php echo $metrics['domains_total']; ?></p>
-    <p class="small">Aceda a Suporte para gerir tickets.</p>
-  </div>
-<?php else: ?>
-  <div class="widgets">
-    <div class="widget">
-      <h4>Serviços Ativos</h4>
-      <p><?php echo $metrics['total_services']; ?></p>
-    </div>
-    <div class="widget">
-      <h4>Domínios Ativos</h4>
-      <p><?php echo $metrics['my_services_active']; ?></p>
-    </div>
-    <div class="widget">
-      <h4>Avisos de Pagamento em Atraso</h4>
-      <p><?php echo $metrics['overdue_invoices']; ?></p>
-    </div>
-    <div class="widget">
-      <h4>Pedidos de Suporte</h4>
-      <p><?php echo $metrics['my_tickets_active']; ?></p>
-    </div>
-  </div>
-<?php endif; ?>
+</div>
 
 <?php include __DIR__ . '/inc/footer.php'; ?>
 

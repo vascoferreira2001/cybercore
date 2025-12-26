@@ -45,6 +45,9 @@ try {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?php echo SITE_NAME; ?></title>
   <link rel="stylesheet" href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../assets/css/style.css' : 'assets/css/style.css'; ?>">
+  <?php $base = (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false) ? '../' : ''; ?>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<?php echo $base; ?>assets/css/auth-modern.css">
   <?php if ($faviconPath && file_exists($faviconPath)): ?>
     <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($faviconUrl); ?>?v=<?php echo time(); ?>">
   <?php endif; ?>
