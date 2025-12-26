@@ -39,6 +39,11 @@ body.auth {
   backdrop-filter: blur(14px);
 }
 
+.shell.single {
+  max-width: 620px;
+  grid-template-columns: 1fr;
+}
+
 .hero {
   padding: 34px;
   background: linear-gradient(145deg, rgba(37, 99, 235, 0.12), rgba(11, 18, 36, 0.85));

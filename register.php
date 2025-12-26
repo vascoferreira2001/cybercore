@@ -111,29 +111,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <?php renderMaintenanceModal($maintenanceMessage ?: 'Criação de conta temporariamente desativada.', ['disable_form' => true]); ?>
 <?php endif; ?>
 
-<div class="shell">
-  <div class="hero">
-    <div>
+<div class="shell single">
+  <div class="panel">
+    <div class="panel-header">
       <div class="hero-header">
         <div class="hero-logo">
           <?php renderAuthLogo($theme['logoUrl']); ?>
         </div>
       </div>
-
-      <p style="text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; color: var(--accent-2); font-weight: 700;">Crie a sua conta</p>
-      <h1 class="hero-title">Junte-se à CyberCore</h1>
-      <p class="hero-subtitle">Crie uma conta para gerir serviços, faturação e suporte num painel moderno e seguro.</p>
-
-      <ul class="hero-list">
-        <li><span class="check">✓</span> Gestão unificada de domínios e alojamento</li>
-        <li><span class="check">✓</span> Suporte técnico 24/7 e tickets</li>
-        <li><span class="check">✓</span> Faturação centralizada e notificações</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-header">
       <h1>Criar conta</h1>
       <p>Use email ou identificador para aceder ao painel.</p>
     </div>
