@@ -46,7 +46,7 @@ body.auth {
 
 .hero {
   padding: 34px;
-  background: linear-gradient(135deg, #1e3a8a, #1e40af);
+  background: linear-gradient(145deg, rgba(37, 99, 235, 0.12), rgba(11, 18, 36, 0.85));
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
