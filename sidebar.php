@@ -16,7 +16,6 @@ function navItem($href, $label, $icon = '', $active = false) {
   <?php
   // Common items
   navItem('/dashboard.php', 'Painel', '📊', strpos($current, '/dashboard.php') !== false);
-  navItem($profileUrl, 'Perfil', '👤', strpos($current, '/profile.php') !== false);
 
   if ($role === 'Gestor') {
       navItem('/admin/customers.php', 'Clientes', '👥', strpos($current, '/admin/customers.php') !== false);
