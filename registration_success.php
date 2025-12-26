@@ -32,10 +32,6 @@ unset($_SESSION['registration_email']);
         <li><span class="check">✓</span> Email de verificação enviado</li>
         <li><span class="check">✓</span> Link válido por 24 horas</li>
       </ul>
-      <div class="hero-cta">
-        <p>Verifique a sua caixa de entrada (e pasta de spam) e clique no link para ativar a conta.</p>
-        <a class="ghost-btn" href="login.php">Ir para Login</a>
-      </div>
     </div>
     <div class="panel">
       <div class="panel-header">

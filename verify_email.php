@@ -92,7 +92,7 @@ if ($token) {
   <link rel="stylesheet" href="assets/css/shared/design-system.css">
 </head>
 <body class="auth">
-  <div class="shell single" role="main">
+  <div class="shell" role="main">
     <div class="hero" aria-hidden="true">
       <div class="hero-header">
         <div class="check">✓</div>
@@ -104,10 +104,6 @@ if ($token) {
         <li><span class="check">✓</span> Necessário para clientes</li>
         <li><span class="check">✓</span> Ajuda a proteger a sua conta</li>
       </ul>
-      <div class="hero-cta">
-        <p>Se não recebeu o email, verifique a pasta de spam ou reenvie abaixo.</p>
-        <a class="ghost-btn" href="login.php">Ir para Login</a>
-      </div>
     </div>
     <div class="panel">
       <div class="panel-header">

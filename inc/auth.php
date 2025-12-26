@@ -158,3 +158,37 @@ function normalizeRoleName($role) {
     ];
     return $map[$role] ?? $role;
 }
+
+/**
+ * Get role-specific dashboard URL
+ * @param string $role - User role
+ * @return string - Dashboard URL for that role
+ */
+function getDashboardUrlByRole($role) {
+    $normalizedRole = normalizeRoleName($role);
+    
+    $dashboardMap = [
+        'Gestor' => '/admin/dashboard.php',
+        'Suporte Financeiro' => '/finance.php',
+        'Suporte Técnico' => '/services.php',
+        'Suporte ao Cliente' => '/support.php',
+        'Cliente' => '/dashboard.php',
+    ];
+    
+    return $dashboardMap[$normalizedRole] ?? '/dashboard.php';
+}
+
+/**
+ * Redirect to role-appropriate dashboard
+ * @param string|null $role - Optional role override, uses current user if null
+ */
+function redirectToDashboard($role = null) {
+    if ($role === null) {
+        $user = currentUser();
+        $role = $user['role'] ?? 'Cliente';
+    }
+    
+    $url = getDashboardUrlByRole($role);
+    header('Location: ' . $url);
+    exit;
+}

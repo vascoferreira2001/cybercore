@@ -175,7 +175,63 @@
 
   function initFiscalPanel(){
     const form = $('#formFiscal');
-    if(form){ form.addEventListener('submit', e => e.preventDefault()); }
+    if(!form) return;
+    
+    // Check if fiscal fields are editable (Manager/Financial Support)
+    const taxIdField = $('#taxId');
+    const isEditable = taxIdField && !taxIdField.hasAttribute('readonly');
+    
+    if(isEditable) {
+      // Handle fiscal form submission for Manager/Financial Support
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        clearErrors(form);
+        
+        const payload = {
+          entityType: $('#entityType').value,
+          companyName: $('#companyName').value.trim(),
+          taxId: $('#taxId').value.trim()
+        };
+        
+        // Validate
+        const errors = {};
+        if(!['Singular', 'Coletiva'].includes(payload.entityType)) {
+          errors.entityType = 'Tipo de entidade inválido.';
+        }
+        if(!payload.taxId || payload.taxId.length !== 9 || !/^\d{9}$/.test(payload.taxId)) {
+          errors.taxId = 'NIF deve ter 9 dígitos.';
+        }
+        if(payload.entityType === 'Coletiva' && payload.companyName.length < 3) {
+          errors.companyName = 'Nome da empresa é obrigatório para Pessoa Coletiva.';
+        }
+        
+        if(Object.keys(errors).length) {
+          Object.keys(errors).forEach(k => setError(k, errors[k]));
+          return;
+        }
+        
+        // Submit to backend
+        apiPost('/inc/fiscal_update.php', payload)
+          .then(res => {
+            if(res && res.success) {
+              toast('Dados fiscais atualizados com sucesso.');
+              return loadUser();
+            } else {
+              const serverErrs = res && res.errors ? res.errors : {};
+              Object.keys(serverErrs).forEach(k => setError(k, serverErrs[k]));
+              if(serverErrs.permission) {
+                toast(serverErrs.permission);
+              }
+            }
+          })
+          .catch(() => toast('Erro ao atualizar dados fiscais.'));
+      });
+    } else {
+      // Prevent submission for read-only users
+      form.addEventListener('submit', e => e.preventDefault());
+    }
+    
+    // Handle fiscal change request button for Clients
     const btn = $('#requestFiscalChangeBtn');
     if(btn){
       btn.addEventListener('click', () => {

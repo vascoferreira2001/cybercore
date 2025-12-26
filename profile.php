@@ -175,35 +175,35 @@ $userDisplayName = trim($cu['first_name'] . ' ' . $cu['last_name']) ?: $cu['emai
           <form class="form-grid" id="formPersonal" novalidate>
             <div class="form-field">
               <label for="fullName">Nome completo</label>
-              <input type="text" id="fullName" name="fullName" autocomplete="name" required>
+              <input type="text" id="fullName" name="fullName" autocomplete="name" value="<?php echo htmlspecialchars(trim(($userData['first_name'] ?? '') . ' ' . ($userData['last_name'] ?? ''))); ?>" required>
               <div class="field-hint">Use o seu nome legal.</div>
               <div class="field-error" data-error-for="fullName"></div>
             </div>
             <div class="form-field">
               <label for="email">Email</label>
-              <input type="email" id="email" name="email" autocomplete="email" required>
+              <input type="email" id="email" name="email" autocomplete="email" value="<?php echo htmlspecialchars($userData['email'] ?? ''); ?>" required>
               <div class="field-hint">Este email é usado para login e notificações.</div>
               <div class="field-error" data-error-for="email"></div>
             </div>
             <div class="form-field">
               <label for="phone">Telemóvel (opcional)</label>
-              <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+351 912 345 678">
+              <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+351 912 345 678" value="<?php echo htmlspecialchars($userData['phone'] ?? ''); ?>">
               <div class="field-hint">Inclua o indicativo do país (ex.: +351).</div>
               <div class="field-error" data-error-for="phone"></div>
             </div>
             <div class="form-field wide">
               <label for="address">Morada (opcional)</label>
-              <input type="text" id="address" name="address" autocomplete="address-line1" placeholder="Rua, nº, andar">
+              <input type="text" id="address" name="address" autocomplete="address-line1" placeholder="Rua, nº, andar" value="<?php echo htmlspecialchars($userData['address'] ?? ''); ?>">
               <div class="field-error" data-error-for="address"></div>
             </div>
             <div class="form-field">
               <label for="city">Cidade (opcional)</label>
-              <input type="text" id="city" name="city" autocomplete="address-level2">
+              <input type="text" id="city" name="city" autocomplete="address-level2" value="<?php echo htmlspecialchars($userData['city'] ?? ''); ?>">
               <div class="field-error" data-error-for="city"></div>
             </div>
             <div class="form-field">
               <label for="postalCode">Código Postal</label>
-              <input type="text" id="postalCode" name="postalCode" inputmode="numeric" placeholder="0000-000" required>
+              <input type="text" id="postalCode" name="postalCode" inputmode="numeric" placeholder="0000-000" value="<?php echo htmlspecialchars($userData['postal_code'] ?? ''); ?>" required>
               <div class="field-hint">Formato PT: NNNN-NNN</div>
               <div class="field-error" data-error-for="postalCode"></div>
             </div>
@@ -211,11 +211,11 @@ $userDisplayName = trim($cu['first_name'] . ' ' . $cu['last_name']) ?: $cu['emai
               <label for="country">País (opcional)</label>
               <select id="country" name="country">
                 <option value="">— Selecionar —</option>
-                <option value="PT">Portugal</option>
-                <option value="ES">Espanha</option>
-                <option value="FR">França</option>
-                <option value="DE">Alemanha</option>
-                <option value="GB">Reino Unido</option>
+                <option value="PT" <?php echo ($userData['country'] ?? '') === 'PT' ? 'selected' : ''; ?>>Portugal</option>
+                <option value="ES" <?php echo ($userData['country'] ?? '') === 'ES' ? 'selected' : ''; ?>>Espanha</option>
+                <option value="FR" <?php echo ($userData['country'] ?? '') === 'FR' ? 'selected' : ''; ?>>França</option>
+                <option value="DE" <?php echo ($userData['country'] ?? '') === 'DE' ? 'selected' : ''; ?>>Alemanha</option>
+                <option value="GB" <?php echo ($userData['country'] ?? '') === 'GB' ? 'selected' : ''; ?>>Reino Unido</option>
               </select>
             </div>
             <div class="form-actions">
@@ -230,30 +230,55 @@ $userDisplayName = trim($cu['first_name'] . ' ' . $cu['last_name']) ?: $cu['emai
         <div class="card">
           <div class="card-header">
             <h2>Informação Fiscal</h2>
-            <p>Dados fiscais bloqueados após configuração inicial.</p>
-            <div class="info-banner" role="note">
-              <strong>Importante:</strong> Para alterar dados fiscais, contacte o suporte.
-              <span class="info-detail">(Tipo de entidade, NIF e Nome da empresa não são editáveis pelo utilizador.)</span>
-            </div>
+            <?php if (in_array($cu['role'], ['Gestor', 'Suporte Financeiro'])): ?>
+              <p>Dados fiscais editáveis (Gestor/Suporte Financeiro).</p>
+            <?php else: ?>
+              <p>Dados fiscais bloqueados após configuração inicial.</p>
+              <div class="info-banner" role="note">
+                <strong>Importante:</strong> Para alterar dados fiscais, contacte o suporte.
+                <span class="info-detail">(Tipo de entidade, NIF e Nome da empresa não são editáveis pelo utilizador.)</span>
+              </div>
+            <?php endif; ?>
           </div>
           <form class="form-grid" id="formFiscal" novalidate>
             <div class="form-field">
               <label for="entityType">Tipo de entidade</label>
-              <input type="text" id="entityType" name="entityType" readonly aria-readonly="true" value="<?php echo htmlspecialchars($userData['entity_type'] === 'Singular' ? 'Pessoa Singular' : 'Pessoa Coletiva'); ?>">
-              <div class="field-lock-note">Campo bloqueado</div>
+              <?php if (in_array($cu['role'], ['Gestor', 'Suporte Financeiro'])): ?>
+                <select id="entityType" name="entityType" required>
+                  <option value="Singular" <?php echo ($userData['entity_type'] ?? '') === 'Singular' ? 'selected' : ''; ?>>Pessoa Singular</option>
+                  <option value="Coletiva" <?php echo ($userData['entity_type'] ?? '') === 'Coletiva' ? 'selected' : ''; ?>>Pessoa Coletiva</option>
+                </select>
+              <?php else: ?>
+                <input type="text" id="entityType" name="entityType" readonly aria-readonly="true" value="<?php echo htmlspecialchars($userData['entity_type'] === 'Singular' ? 'Pessoa Singular' : 'Pessoa Coletiva'); ?>">
+                <div class="field-lock-note">Campo bloqueado</div>
+              <?php endif; ?>
             </div>
             <div class="form-field">
               <label for="companyName">Nome da empresa</label>
-              <input type="text" id="companyName" name="companyName" readonly aria-readonly="true" value="<?php echo htmlspecialchars($userData['company_name'] ?? '—'); ?>">
-              <div class="field-lock-note">Campo bloqueado</div>
+              <?php if (in_array($cu['role'], ['Gestor', 'Suporte Financeiro'])): ?>
+                <input type="text" id="companyName" name="companyName" value="<?php echo htmlspecialchars($userData['company_name'] ?? ''); ?>">
+              <?php else: ?>
+                <input type="text" id="companyName" name="companyName" readonly aria-readonly="true" value="<?php echo htmlspecialchars($userData['company_name'] ?? '—'); ?>">
+                <div class="field-lock-note">Campo bloqueado</div>
+              <?php endif; ?>
             </div>
             <div class="form-field">
               <label for="taxId">NIF</label>
-              <input type="text" id="taxId" name="taxId" readonly aria-readonly="true" value="<?php echo htmlspecialchars($userData['nif']); ?>">
-              <div class="field-lock-note">Campo bloqueado</div>
+              <?php if (in_array($cu['role'], ['Gestor', 'Suporte Financeiro'])): ?>
+                <input type="text" id="taxId" name="taxId" value="<?php echo htmlspecialchars($userData['nif'] ?? ''); ?>" required>
+                <div class="field-hint">NIF português de 9 dígitos</div>
+              <?php else: ?>
+                <input type="text" id="taxId" name="taxId" readonly aria-readonly="true" value="<?php echo htmlspecialchars($userData['nif']); ?>">
+                <div class="field-lock-note">Campo bloqueado</div>
+              <?php endif; ?>
             </div>
             
-            <?php if ($cu['role'] === 'Cliente'): ?>
+            <?php if (in_array($cu['role'], ['Gestor', 'Suporte Financeiro'])): ?>
+              <div class="form-actions">
+                <button class="btn secondary" type="reset">Repor</button>
+                <button class="btn primary" type="submit">Guardar Dados Fiscais</button>
+              </div>
+            <?php elseif ($cu['role'] === 'Cliente'): ?>
               <div class="form-field wide">
                 <div class="info-banner" style="background:#e3f2fd;border:1px solid #90caf9;padding:12px;border-radius:6px;margin:12px 0">
                   <strong>ℹ️ Dados Fiscais Protegidos</strong><br>
