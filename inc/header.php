@@ -52,7 +52,7 @@ try {
     <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($faviconUrl); ?>?v=<?php echo time(); ?>">
   <?php endif; ?>
 </head>
-<body>
+<body class="dashboard">
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
@@ -190,3 +190,53 @@ try {
     <div class="logout"><a href="/logout.php">Logout</a></div>
   </aside>
   <main class="content">
+    <?php
+      // Notificações simples (contagem por papel)
+      $notifCount = 0;
+      try {
+        if (!isset($pdo)) { $pdo = getDB(); }
+        $cu = currentUser();
+        if ($cu && $cu['role'] === 'Cliente') {
+          // Tickets abertos + faturas em atraso (se existir tabela)
+          try {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE user_id = ? AND status = 'open'");
+            $stmt->execute([$cu['id']]);
+            $notifCount += (int)$stmt->fetchColumn();
+          } catch (Throwable $e) {}
+          try {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM invoices WHERE user_id = ? AND status != 'paid' AND due_date < NOW()");
+            $stmt->execute([$cu['id']]);
+            $notifCount += (int)$stmt->fetchColumn();
+          } catch (Throwable $e) {}
+        } else if ($cu) {
+          // Admin/support: tickets abertos
+          try {
+            $stmt = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status = 'open'");
+            $notifCount += (int)$stmt->fetchColumn();
+          } catch (Throwable $e) {}
+        }
+      } catch (Throwable $e) { $notifCount = 0; }
+    ?>
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">CyberCore</span>
+      </div>
+      <div class="topbar-right">
+        <form class="topbar-search" action="search.php" method="get">
+          <input type="text" name="q" placeholder="Pesquisar…">
+          <button type="submit" class="icon-btn" aria-label="Pesquisar">🔎</button>
+        </form>
+        <div class="icon-btn bell" title="Notificações">
+          🔔
+          <?php if ($notifCount > 0): ?>
+            <span class="badge"><?php echo (int)$notifCount; ?></span>
+          <?php endif; ?>
+        </div>
+        <?php if ($cu): ?>
+          <div class="user-chip">
+            <span class="avatar"><?php echo strtoupper(substr($cu['first_name'],0,1)); ?></span>
+            <span class="name"><?php echo htmlspecialchars($cu['first_name'].' '.$cu['last_name']); ?></span>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>

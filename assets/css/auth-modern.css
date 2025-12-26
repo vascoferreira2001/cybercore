@@ -25,6 +25,98 @@ body.auth {
   justify-content: center;
 }
 
+/* Modern Dashboard Base */
+body.dashboard {
+  font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.12), transparent 30%),
+              radial-gradient(circle at 80% 0%, rgba(37, 99, 235, 0.16), transparent 32%),
+              radial-gradient(circle at 40% 80%, rgba(26, 86, 219, 0.12), transparent 35%),
+              var(--bg);
+  color: var(--text);
+}
+
+body.dashboard .sidebar {
+  width: 280px;
+  background: rgba(15, 23, 42, 0.92);
+  border-right: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+
+body.dashboard .sidebar .brand {
+  font-weight: 800;
+  font-size: 18px;
+  color: #fff;
+}
+
+body.dashboard .sidebar .nav-item,
+body.dashboard .sidebar .nav-item-sub {
+  color: #cbd5e1;
+}
+
+body.dashboard .sidebar .nav-item:hover,
+body.dashboard .sidebar .nav-item-sub:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+body.dashboard .content {
+  background: transparent;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+.topbar-title { font-weight: 800; color: #fff; }
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.topbar-search { display: flex; align-items: center; gap: 8px; }
+.topbar-search input {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  padding: 8px 12px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+}
+
+.icon-btn .badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+}
+
+.user-chip { display: inline-flex; align-items: center; gap: 8px; color: #fff; font-weight: 700; }
+.user-chip .avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
+}
+
 .shell {
   width: 100%;
   max-width: 1080px;
