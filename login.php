@@ -17,6 +17,7 @@ $siteLogo = getSetting($pdo, 'site_logo');
 $errors = [];
 $maxAttempts = 5;
 $lockoutTime = 600;
+$cacheAvailable = function_exists('apcu_fetch') && function_exists('apcu_store') && function_exists('apcu_exists') && function_exists('apcu_delete') && filter_var(ini_get('apc.enabled'), FILTER_VALIDATE_BOOLEAN);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate();
@@ -28,13 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $key = 'login_attempts_' . md5($clientIP . $emailOrId);
   $lockKey = 'login_lockout_' . md5($clientIP . $emailOrId);
   
-  if (apcu_exists($lockKey)) {
+  if ($cacheAvailable && apcu_exists($lockKey)) {
     $errors[] = 'Conta bloqueada temporariamente. Tente novamente em 10 minutos.';
-  } elseif (apcu_exists($key) && apcu_fetch($key) >= $maxAttempts) {
+  } elseif ($cacheAvailable && apcu_exists($key) && apcu_fetch($key) >= $maxAttempts) {
     $errors[] = 'Demasiadas tentativas falhadas. Conta bloqueada por 10 minutos.';
     apcu_store($lockKey, true, $lockoutTime);
   } else {
-    $attempts = apcu_fetch($key) ?? 0;
+    $attempts = $cacheAvailable ? (apcu_fetch($key) ?? 0) : 0;
     
     if (empty($errors)) {
       // Permitir login com email OU identificador (CYC#...)
@@ -50,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $user = $stmt->fetch();
       
       if ($user && password_verify($password, $user['password_hash'])) {
-        apcu_delete($key);
+        if ($cacheAvailable) apcu_delete($key);
         
         if ($user['email_verified'] == 0 && $user['role'] === 'Cliente') {
           $_SESSION['pending_email_verification'] = $user['email'];
@@ -72,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
       } else {
         $errors[] = 'Email ou palavra-passe incorretos.';
-        apcu_store($key, $attempts + 1, 600);
+        if ($cacheAvailable) apcu_store($key, $attempts + 1, 600);
       }
     }
   }
@@ -84,438 +85,356 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Login - CyberCore</title>
-  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    :root {
+      --bg: #0f172a;
+      --panel: #0b1224;
+      --muted: #cdd5e1;
+      --text: #e2e8f0;
+      --accent: #2563eb;
+      --accent-2: #38bdf8;
+      --border: rgba(255, 255, 255, 0.08);
+      --danger: #f97316;
     }
 
-    html, body {
-      font-family: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      background: #fff;
-      color: #333;
-      line-height: 1.6;
-      min-height: 100vh;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
+      font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.12), transparent 30%),
+                  radial-gradient(circle at 80% 0%, rgba(37, 99, 235, 0.16), transparent 32%),
+                  radial-gradient(circle at 40% 80%, rgba(26, 86, 219, 0.12), transparent 35%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 18px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
     }
 
-    .login-wrapper {
+    .shell {
       width: 100%;
-      max-width: 900px;
-    }
-
-    .login-header {
-      text-align: center;
-      margin-bottom: 50px;
-    }
-
-    .login-logo {
-      height: 50px;
-      margin-bottom: 30px;
-    }
-
-    .login-logo img {
-      height: 50px;
-      width: auto;
-      object-fit: contain;
-    }
-
-    .login-logo svg {
-      height: 50px;
-      width: auto;
-    }
-
-    .login-title {
-      font-size: 32px;
-      font-weight: 600;
-      color: #000;
-      margin-bottom: 10px;
-    }
-
-    .login-subtitle {
-      font-size: 14px;
-      color: #666;
-    }
-
-    .login-container {
+      max-width: 1080px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-      margin-top: 40px;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 28px;
+      background: rgba(11, 18, 36, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+      backdrop-filter: blur(14px);
     }
 
-    .login-column {
+    .hero {
+      padding: 34px;
+      background: linear-gradient(145deg, rgba(37, 99, 235, 0.12), rgba(11, 18, 36, 0.85));
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
     }
 
-    .login-section-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #000;
-      margin-bottom: 20px;
-    }
-
-    .login-section-subtitle {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 500;
-      color: #333;
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 12px;
-      font-size: 14px;
-      border: 1px solid #ddd;
-      border-radius: 2px;
-      font-family: "Source Sans 3", sans-serif;
-      transition: all 0.2s ease;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #007dff;
-      box-shadow: 0 0 0 3px rgba(0, 125, 255, 0.1);
-    }
-
-    .form-group input::placeholder {
-      color: #999;
-    }
-
-    .form-actions {
+    .hero-header {
       display: flex;
-      gap: 10px;
-      margin-top: 24px;
-      margin-bottom: 20px;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
     }
 
-    .btn {
-      flex: 1;
-      padding: 12px 24px;
-      font-size: 14px;
-      font-weight: 600;
-      border: none;
-      border-radius: 2px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      text-align: center;
-      display: inline-block;
-      font-family: "Source Sans 3", sans-serif;
-    }
+    .hero-logo svg { height: 40px; width: auto; }
 
-    .btn-primary {
-      background: #007dff;
+    .hero-title {
+      font-size: 30px;
+      font-weight: 700;
+      margin-bottom: 12px;
       color: #fff;
     }
 
-    .btn-primary:hover {
-      background: #0066cc;
-      box-shadow: 0 2px 8px rgba(0, 125, 255, 0.3);
+    .hero-subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 520px;
     }
 
-    .btn-primary:active {
-      background: #0052a3;
+    .hero-list {
+      margin-top: 28px;
+      list-style: none;
+      display: grid;
+      gap: 14px;
     }
 
-    .btn-secondary {
-      background: #f5f5f5;
-      color: #333;
-      border: 1px solid #ddd;
+    .hero-list li {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      color: var(--text);
+      font-weight: 500;
     }
 
-    .btn-secondary:hover {
-      background: #efefef;
+    .check {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.18);
+      display: grid;
+      place-items: center;
+      color: var(--accent-2);
+      font-weight: 700;
+      border: 1px solid rgba(37, 99, 235, 0.35);
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.18);
     }
 
-    .forgot-password {
-      text-align: right;
+    .hero-cta {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.02);
     }
 
-    .forgot-password a {
-      font-size: 12px;
-      color: #007dff;
+    .hero-cta p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .ghost-btn {
+      color: #fff;
       text-decoration: none;
-      transition: color 0.2s;
+      font-weight: 700;
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: linear-gradient(120deg, rgba(37, 99, 235, 0.65), rgba(56, 189, 248, 0.5));
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.32);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
-    .forgot-password a:hover {
-      color: #0066cc;
-      text-decoration: underline;
+    .ghost-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 36px rgba(37, 99, 235, 0.42); }
+
+    .panel {
+      padding: 34px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: rgba(15, 23, 42, 0.92);
+    }
+
+    .panel-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .panel-header p {
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: 14px;
     }
 
     .error-box {
-      background: #fff3cd;
-      border: 1px solid #ffc107;
-      color: #856404;
-      padding: 12px 16px;
-      border-radius: 2px;
-      margin-bottom: 20px;
+      border: 1px solid rgba(249, 115, 22, 0.35);
+      background: rgba(249, 115, 22, 0.08);
+      color: #fed7aa;
+      border-radius: 12px;
+      padding: 12px 14px;
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
-    .error-box ul {
-      margin: 0;
-      padding-left: 20px;
+    .error-box ul { padding-left: 18px; margin: 0; }
+    .error-box li { margin-bottom: 6px; }
+
+    form { display: grid; gap: 14px; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 700;
     }
 
-    .error-box li {
-      margin-bottom: 4px;
+    .input {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: #fff;
+      padding: 13px 14px;
+      font-size: 15px;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    .input::placeholder { color: #8ea0be; }
+
+    .input:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.65);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .form-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .link {
+      color: var(--accent-2);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .link:hover { text-decoration: underline; }
+
+    .cta {
+      margin-top: 6px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+      color: #fff;
+    }
+
+    .btn-primary {
+      background: linear-gradient(120deg, #2563eb, #38bdf8);
+      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    .btn-primary:active { transform: translateY(1px); }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
     }
 
     .divider {
-      text-align: center;
-      margin: 30px 0;
-      position: relative;
-    }
-
-    .divider::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      width: 100%;
-      height: 1px;
-      background: #eee;
-    }
-
-    .divider span {
-      background: #fff;
-      padding: 0 10px;
-      position: relative;
-      color: #666;
+      margin: 8px 0 4px;
+      color: var(--muted);
       font-size: 12px;
-    }
-
-    .register-info {
-      background: #f9f9f9;
-      padding: 24px;
-      border-radius: 2px;
-      border: 1px solid #f0f0f0;
-    }
-
-    .register-info-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #000;
-      margin-bottom: 12px;
-    }
-
-    .register-info-text {
-      font-size: 13px;
-      color: #666;
-      line-height: 1.6;
-      margin-bottom: 16px;
-    }
-
-    .register-benefits {
-      list-style: none;
-      margin-bottom: 16px;
-    }
-
-    .register-benefits li {
-      font-size: 13px;
-      color: #666;
-      padding-left: 20px;
-      position: relative;
-      margin-bottom: 8px;
-    }
-
-    .register-benefits li::before {
-      content: '✓';
-      position: absolute;
-      left: 0;
-      color: #007dff;
-      font-weight: bold;
-    }
-
-    .register-button {
-      width: 100%;
-      padding: 12px 24px;
-      background: #007dff;
-      color: #fff;
-      border: none;
-      border-radius: 2px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: "Source Sans 3", sans-serif;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      display: block;
       text-align: center;
     }
 
-    .register-button:hover {
-      background: #0066cc;
-      box-shadow: 0 2px 8px rgba(0, 125, 255, 0.3);
-    }
-
-    .footer-text {
+    .footer {
       text-align: center;
-      font-size: 11px;
-      color: #999;
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #f0f0f0;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 18px;
     }
 
-    .footer-text a {
-      color: #007dff;
-      text-decoration: none;
-    }
+    .footer a { color: var(--accent-2); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
 
-    .footer-text a:hover {
-      text-decoration: underline;
-    }
-
-    /* Mobile Responsive */
-    @media (max-width: 768px) {
-      .login-container {
-        grid-template-columns: 1fr;
-        gap: 40px;
-      }
-
-      .login-title {
-        font-size: 24px;
-      }
-
-      .form-actions {
-        flex-direction: column;
-      }
-
-      .btn {
-        width: 100%;
-      }
-
-      .forgot-password {
-        text-align: left;
-        margin-top: 10px;
-      }
-
-      body {
-        padding: 20px;
-      }
-
-      .login-wrapper {
-        max-width: 100%;
-      }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .hero { border-right: none; border-bottom: 1px solid var(--border); }
+      body { padding: 22px 14px; }
     }
   </style>
 </head>
 <body>
 
-<div class="login-wrapper">
-  <div class="login-header">
-    <div class="login-logo">
-      <?php if ($siteLogo && getAssetPath($siteLogo) && file_exists(getAssetPath($siteLogo))): ?>
-        <img src="<?php echo htmlspecialchars(getAssetUrl($siteLogo)); ?>?v=<?php echo time(); ?>" alt="Logo">
-      <?php else: ?>
-        <svg viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <text x="10" y="35" font-family="Source Sans 3, sans-serif" font-size="28" font-weight="600" fill="#000">CyberCore</text>
-        </svg>
-      <?php endif; ?>
-    </div>
-    <h1 class="login-title">Bem-vindo</h1>
-    <p class="login-subtitle">Aceda à sua conta CyberCore</p>
-  </div>
-
-  <div class="login-container">
-    <!-- Coluna 1: Login -->
-    <div class="login-column">
-      <h2 class="login-section-title">Já tem conta?</h2>
-      <p class="login-section-subtitle">Faça login com o seu email e password para aceder à sua conta.</p>
-
-      <?php if (!empty($errors)): ?>
-        <div class="error-box">
-          <ul>
-            <?php foreach ($errors as $error): ?>
-              <li><?php echo htmlspecialchars($error); ?></li>
-            <?php endforeach; ?>
-          </ul>
+<div class="shell">
+  <div class="hero">
+    <div>
+      <div class="hero-header">
+        <div class="hero-logo">
+          <?php if ($siteLogo && getAssetPath($siteLogo) && file_exists(getAssetPath($siteLogo))): ?>
+            <img src="<?php echo htmlspecialchars(getAssetUrl($siteLogo)); ?>?v=<?php echo time(); ?>" alt="Logo" style="height:40px; width:auto;">
+          <?php else: ?>
+            <svg viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <text x="10" y="35" font-family="Manrope, sans-serif" font-size="28" font-weight="700" fill="#fff">CyberCore</text>
+            </svg>
+          <?php endif; ?>
         </div>
-      <?php endif; ?>
+      </div>
 
-      <form method="post">
-        <?php echo csrf_input(); ?>
+      <div>
+        <p style="text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; color: var(--accent-2); font-weight: 700;">Aceda ao seu painel</p>
+        <h1 class="hero-title">Bem-vindo de volta</h1>
+        <p class="hero-subtitle">Faça login com email ou identificador para gerir domínios, faturação e suporte num só painel.</p>
 
-        <div class="form-group">
-          <label for="email">Email ou Identificador</label>
-          <input type="text" id="email" name="email" required placeholder="seu@email.com ou CYC#12345">
-        </div>
-
-        <div class="form-group">
-          <label for="password">Palavra-passe</label>
-          <input type="password" id="password" name="password" required placeholder="••••••••">
-        </div>
-
-        <div class="forgot-password">
-          <a href="forgot_password.php">Esqueceu a palavra-passe?</a>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Entrar</button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Coluna 2: Registo -->
-    <div class="login-column">
-      <div class="register-info">
-        <h2 class="register-info-title">Novo cliente?</h2>
-        <p class="register-info-text">Crie uma conta para aceder a todos os serviços da CyberCore.</p>
-        
-        <ul class="register-benefits">
-          <li>Gestão de domínios e alojamento</li>
-          <li>Suporte técnico 24/7</li>
-          <li>Faturação centralizada</li>
-          <li>Painel de controlo completo</li>
+        <ul class="hero-list">
+          <li><span class="check">✓</span> Login seguro com email ou CYC#ID</li>
+          <li><span class="check">✓</span> Autenticação rápida com sessão renovada</li>
+          <li><span class="check">✓</span> Monitorização de segurança e atividade</li>
         </ul>
-
-          <a href="register.php" class="register-button">Criar conta</a>
-
-        <div class="divider">
-          <span>ou</span>
-        </div>
-
-        <p style="font-size: 11px; color: #999; text-align: center;">
-          Já tem acesso? Recupere a sua conta usando o botão de recuperação de password.
-        </p>
       </div>
     </div>
+
+    <div class="hero-cta">
+      <p>Ainda não tem conta? Crie já e comece a usar a área de cliente.</p>
+      <a class="ghost-btn" href="register.php">Criar conta</a>
+    </div>
   </div>
 
-  <div class="footer-text">
-    <p>
-      © 2025 CyberCore. Todos os direitos reservados. | 
-      <a href="#">Privacidade</a> | 
-      <a href="#">Termos de Serviço</a> | 
-      <a href="#">Contacte-nos</a>
-    </p>
+  <div class="panel">
+    <div class="panel-header">
+      <h1>Entrar</h1>
+      <p>Use o seu email ou identificador para continuar.</p>
+    </div>
+
+    <?php if (!empty($errors)): ?>
+      <div class="error-box">
+        <ul>
+          <?php foreach ($errors as $error): ?>
+            <li><?php echo htmlspecialchars($error); ?></li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
+    <?php endif; ?>
+
+    <form method="post">
+      <?php echo csrf_input(); ?>
+      <div>
+        <label for="email">Email ou identificador</label>
+        <input class="input" type="text" id="email" name="email" required placeholder="ex: nome@dominio.com ou CYC#00001" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
+      </div>
+      <div>
+        <label for="password">Palavra-passe</label>
+        <input class="input" type="password" id="password" name="password" required placeholder="••••••••">
+      </div>
+
+      <div class="form-footer">
+        <span></span>
+        <a class="link" href="forgot_password.php">Esqueceu a password?</a>
+      </div>
+
+      <div class="cta">
+        <button class="btn btn-primary" type="submit">Entrar</button>
+        <div class="divider">ou</div>
+        <a class="btn btn-secondary" href="register.php">Criar conta</a>
+      </div>
+    </form>
+
+    <div class="footer">
+      © 2025 CyberCore · <a href="#">Privacidade</a> · <a href="#">Termos</a> · <a href="#">Contacto</a>
+    </div>
   </div>
 </div>
 
