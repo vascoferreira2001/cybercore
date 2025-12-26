@@ -207,6 +207,62 @@ form { display: grid; gap: 14px; }
   color: #111827;
 }
 
+.section-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111827;
+  margin: 10px 0 8px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.action-btn {
+  display: block;
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 800;
+  text-decoration: none;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #1f2937;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.action-btn:hover { transform: translateY(-1px); filter: brightness(1.02); }
+
+.action-btn.primary {
+  background: linear-gradient(120deg, #2563eb, #38bdf8);
+  color: #fff;
+  border: none;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.25);
+}
+
+.activity-list {
+  display: grid;
+  gap: 10px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.activity-item .meta {
+  color: #6b7280;
+  font-size: 12px;
+}
+
 label {
   display: block;
   font-size: 12px;

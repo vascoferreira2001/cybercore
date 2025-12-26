@@ -72,6 +72,24 @@ if (canAccessResource($pdo, $user, 'expenses', 'view')) {
       <p>Bem-vindo, <?php echo htmlspecialchars($user['first_name'].' '.$user['last_name']); ?>.</p>
     </div>
 
+    <div class="section-title">Ações rápidas</div>
+    <div class="actions">
+      <?php if ($user['role'] === 'Gestor'): ?>
+        <a class="action-btn primary" href="/admin/customers.php">Clientes</a>
+        <a class="action-btn" href="/admin/tickets.php">Tickets</a>
+        <a class="action-btn" href="/admin/reports.php">Relatórios</a>
+        <a class="action-btn" href="/admin/settings.php">Definições</a>
+      <?php elseif ($user['role'] === 'Suporte Financeira'): ?>
+        <a class="action-btn primary" href="/admin/payments.php">Faturas</a>
+        <a class="action-btn" href="/admin/payment-warnings.php">Avisos de Pagamento</a>
+        <a class="action-btn" href="/admin/expenses.php">Despesas</a>
+      <?php else: ?>
+        <a class="action-btn primary" href="/admin/tickets.php">Tickets</a>
+        <a class="action-btn" href="/admin/documents.php">Documentos</a>
+        <a class="action-btn" href="/admin/knowledge-base.php">Bancos de Conhecimento</a>
+      <?php endif; ?>
+    </div>
+
     <?php if ($user['role'] === 'Gestor'): ?>
       <div class="metrics-grid">
         <div class="metric-card"><div class="metric-title">Clientes</div><div class="metric-value"><?php echo $metrics['total_clients']; ?></div></div>
@@ -92,7 +110,32 @@ if (canAccessResource($pdo, $user, 'expenses', 'view')) {
         <div class="metric-card"><div class="metric-title">Clientes</div><div class="metric-value"><?php echo $metrics['total_clients']; ?></div></div>
       </div>
     <?php endif; ?>
-
+    
+    <?php
+      $activities = [];
+      try {
+        $stmt = $pdo->query('SELECT u.first_name, u.last_name, l.type, l.message, l.created_at FROM logs l LEFT JOIN users u ON l.user_id = u.id ORDER BY l.created_at DESC LIMIT 5');
+        $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      } catch (Throwable $e) {}
+    ?>
+    <div class="section-title">Atividade recente</div>
+    <div class="activity-list">
+      <?php if (empty($activities)): ?>
+        <div class="activity-item"><div>Sem atividade recente.</div></div>
+      <?php else: ?>
+        <?php foreach ($activities as $act): ?>
+          <div class="activity-item">
+            <div>
+              <strong><?php echo htmlspecialchars($act['type']); ?></strong> — <?php echo htmlspecialchars($act['message']); ?>
+              <?php if (!empty($act['first_name'])): ?>
+                <span class="meta">(<?php echo htmlspecialchars($act['first_name'].' '.$act['last_name']); ?>)</span>
+              <?php endif; ?>
+            </div>
+            <div class="meta"><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($act['created_at']))); ?></div>
+          </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
   </div>
 </div>
 

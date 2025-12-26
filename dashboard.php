@@ -41,6 +41,45 @@ if ($user['role'] === 'Gestor') {
   $metrics['overdue_invoices'] = safeCount($pdo, "SELECT COUNT(*) FROM invoices WHERE user_id = ? AND status != 'paid' AND due_date < NOW()", [$user['id']]);
 }
 
+// Ações por papel (renderização comum)
+$actions = [];
+if ($user['role'] === 'Gestor') {
+  $actions = [
+    ['label' => 'Clientes', 'href' => '/admin/customers.php', 'primary' => true],
+    ['label' => 'Tickets', 'href' => '/admin/tickets.php'],
+    ['label' => 'Relatórios', 'href' => '/admin/reports.php'],
+    ['label' => 'Definições', 'href' => '/admin/settings.php']
+  ];
+} elseif ($user['role'] === 'Suporte Financeira') {
+  $actions = [
+    ['label' => 'Faturas', 'href' => '/admin/payments.php', 'primary' => true],
+    ['label' => 'Avisos de Pagamento', 'href' => '/admin/payment-warnings.php'],
+    ['label' => 'Despesas', 'href' => '/admin/expenses.php']
+  ];
+} elseif (in_array($user['role'], ['Suporte ao Cliente','Suporte Técnica'])) {
+  $actions = [
+    ['label' => 'Tickets', 'href' => '/admin/tickets.php', 'primary' => true],
+    ['label' => 'Documentos', 'href' => '/admin/documents.php'],
+    ['label' => 'Bancos de Conhecimento', 'href' => '/admin/knowledge-base.php']
+  ];
+} else {
+  $actions = [
+    ['label' => 'Abrir Ticket', 'href' => '/support.php', 'primary' => true],
+    ['label' => 'Ver Faturas', 'href' => '/finance.php'],
+    ['label' => 'Gerir Domínios', 'href' => '/domains.php']
+  ];
+}
+
+// Atividade recente
+$activities = [];
+try {
+  $stmt = $pdo->prepare('SELECT type, message, created_at FROM logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 5');
+  $stmt->execute([$user['id']]);
+  $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+  // silencioso
+}
+
 ?>
 <?php include __DIR__ . '/inc/header.php'; ?>
 
@@ -49,6 +88,13 @@ if ($user['role'] === 'Gestor') {
     <div class="panel-header">
       <h1>Painel</h1>
       <p>Bem-vindo, <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?> · ID <?php echo $cwc; ?></p>
+    </div>
+
+    <div class="section-title">Ações rápidas</div>
+    <div class="actions">
+      <?php foreach ($actions as $a): $cls = !empty($a['primary']) ? 'action-btn primary' : 'action-btn'; ?>
+        <a class="<?php echo $cls; ?>" href="<?php echo htmlspecialchars($a['href']); ?>"><?php echo htmlspecialchars($a['label']); ?></a>
+      <?php endforeach; ?>
     </div>
 
     <?php if ($user['role'] === 'Gestor'): ?>
@@ -114,6 +160,22 @@ if ($user['role'] === 'Gestor') {
         </div>
       </div>
     <?php endif; ?>
+
+    <div class="section-title">Atividade recente</div>
+    <div class="activity-list">
+      <?php if (empty($activities)): ?>
+        <div class="activity-item"><div>Sem atividade recente.</div></div>
+      <?php else: ?>
+        <?php foreach ($activities as $act): ?>
+          <div class="activity-item">
+            <div>
+              <strong><?php echo htmlspecialchars($act['type']); ?></strong> — <?php echo htmlspecialchars($act['message']); ?>
+            </div>
+            <div class="meta"><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($act['created_at']))); ?></div>
+          </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
 
   </div>
 </div>
