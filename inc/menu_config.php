@@ -89,6 +89,13 @@ function getMenuItemsByRole($role) {
             'roles' => ['Gestor', 'Suporte Financeiro']
         ],
         [
+            'url' => '/admin/payment-warnings.php',
+            'label' => 'Avisos de Pagamento',
+            'icon' => 'alert-circle',
+            'key' => 'payment-warnings',
+            'roles' => ['Gestor', 'Suporte Financeiro']
+        ],
+        [
             'url' => '/admin/fiscal-approvals.php',
             'label' => 'Aprovações Fiscais',
             'icon' => 'check-square',
@@ -96,11 +103,32 @@ function getMenuItemsByRole($role) {
             'roles' => ['Gestor', 'Suporte Financeiro']
         ],
         [
+            'url' => '/admin/hosting.php',
+            'label' => 'Alojamentos Web',
+            'icon' => 'globe',
+            'key' => 'hosting',
+            'roles' => ['Gestor', 'Suporte Técnico']
+        ],
+        [
+            'url' => '/admin/servers.php',
+            'label' => 'Servidores',
+            'icon' => 'server',
+            'key' => 'servers',
+            'roles' => ['Gestor', 'Suporte Técnico']
+        ],
+        [
             'url' => '/admin/tickets.php',
-            'label' => 'Tickets',
+            'label' => 'Bilhetes de Suporte',
             'icon' => 'message-square',
             'key' => 'tickets',
             'roles' => ['Gestor', 'Suporte ao Cliente', 'Suporte Técnico', 'Suporte Financeiro']
+        ],
+        [
+            'url' => '/admin/documents.php',
+            'label' => 'Documentos da Equipa',
+            'icon' => 'file-text',
+            'key' => 'documents',
+            'roles' => ['Gestor', 'Suporte Técnico']
         ],
         [
             'url' => '/admin/reports.php',
@@ -174,6 +202,8 @@ function getMenuIcon($iconName) {
         'settings' => '<circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m5.66-13v.01M18.36 5.64v.01M21 12h-6m-6 0H3m13.66 5.66v.01M18.36 18.36v.01M12 21v-6"></path>',
         'list' => '<line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>',
         'upload' => '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>',
+            'alert-circle' => '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>',
+            'file-text' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="13" x2="18" y2="13"></line><line x1="12" y1="17" x2="18" y2="17"></line><line x1="12" y1="9" x2="18" y2="9"></line>',
         'logout' => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line>'
     ];
 

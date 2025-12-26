@@ -70,7 +70,7 @@ $activityLog = [];
 
 // Fetch recent data based on user role
 try {
-  $isManager = ($user['role'] === 'Gestor');
+  $isManager = ($user['role'] !== 'Cliente');
   
   // Services query
   if ($isManager) {
@@ -151,7 +151,7 @@ $metrics = [
 ];
 
 try {
-  $isManager = ($user['role'] === 'Gestor');
+  $isManager = ($user['role'] !== 'Cliente');
   
   if ($isManager) {
     // Manager metrics
@@ -376,7 +376,7 @@ function getStatusBadge($status) {
         <span>Domínios</span>
       </a>
 
-      <?php if ($user['role'] === 'Gestor'): ?>
+      <?php if ($user['role'] !== 'Cliente'): ?>
       <div class="nav-divider"></div>
       <a href="/admin/customers.php" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -460,7 +460,7 @@ function getStatusBadge($status) {
         <div class="stat-card">
           <div class="stat-icon blue">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <?php if ($user['role'] === 'Gestor'): ?>
+              <?php if ($user['role'] !== 'Cliente'): ?>
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -471,12 +471,12 @@ function getStatusBadge($status) {
           </div>
           <div class="stat-content">
             <div class="stat-label">
-              <?php echo $user['role'] === 'Gestor' ? 'Total de Clientes' : 'Serviços Ativos'; ?>
+              <?php echo $user['role'] !== 'Cliente' ? 'Total de Clientes' : 'Serviços Ativos'; ?>
             </div>
-            <div class="stat-value" data-stat="<?php echo $user['role'] === 'Gestor' ? 'clients' : 'services'; ?>">
-              <?php echo $user['role'] === 'Gestor' ? $metrics['clients'] : $metrics['activeServices']; ?>
+            <div class="stat-value" data-stat="<?php echo $user['role'] !== 'Cliente' ? 'clients' : 'services'; ?>">
+              <?php echo $user['role'] !== 'Cliente' ? $metrics['clients'] : $metrics['activeServices']; ?>
             </div>
-            <?php if ($user['role'] !== 'Gestor'): ?>
+            <?php if ($user['role'] === 'Cliente'): ?>
             <div class="stat-footer">de <?php echo $metrics['services']; ?> total</div>
             <?php endif; ?>
           </div>
@@ -491,10 +491,10 @@ function getStatusBadge($status) {
           </div>
           <div class="stat-content">
             <div class="stat-label">
-              <?php echo $user['role'] === 'Gestor' ? 'Faturas Pendentes' : 'Faturas por Pagar'; ?>
+              <?php echo $user['role'] !== 'Cliente' ? 'Faturas Pendentes' : 'Faturas por Pagar'; ?>
             </div>
             <div class="stat-value" data-stat="invoices"><?php echo $metrics['invoices']; ?></div>
-            <?php if ($user['role'] !== 'Gestor' && $metrics['unpaidAmount'] > 0): ?>
+            <?php if ($user['role'] === 'Cliente' && $metrics['unpaidAmount'] > 0): ?>
             <div class="stat-footer"><?php echo formatCurrency($metrics['unpaidAmount']); ?></div>
             <?php endif; ?>
           </div>
@@ -517,7 +517,7 @@ function getStatusBadge($status) {
           </div>
         </div>
 
-        <?php if ($user['role'] === 'Gestor'): ?>
+        <?php if ($user['role'] !== 'Cliente'): ?>
         <div class="stat-card">
           <div class="stat-icon purple">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -587,7 +587,7 @@ function getStatusBadge($status) {
                       <div class="service-meta">
                         <?php 
                         echo htmlspecialchars($service['type'] ?? 'N/A');
-                        if (isset($service['first_name']) && $user['role'] === 'Gestor') {
+                        if (isset($service['first_name']) && $user['role'] !== 'Cliente') {
                           echo ' • ' . htmlspecialchars($service['first_name'] . ' ' . $service['last_name']);
                         }
                         if (isset($service['renewal_date'])) {
@@ -634,7 +634,7 @@ function getStatusBadge($status) {
                     <div class="invoice-info">
                       <div class="invoice-number">
                         #<?php echo htmlspecialchars($invoice['id']); ?>
-                        <?php if (isset($invoice['first_name']) && $user['role'] === 'Gestor'): ?>
+                        <?php if (isset($invoice['first_name']) && $user['role'] !== 'Cliente'): ?>
                         <span style="font-weight: normal; font-size: 12px; color: #666;">
                           • <?php echo htmlspecialchars($invoice['first_name'] . ' ' . $invoice['last_name']); ?>
                         </span>
@@ -695,7 +695,7 @@ function getStatusBadge($status) {
                     </div>
                     <div class="ticket-meta">
                       <span>Ticket #<?php echo $ticket['id']; ?></span>
-                      <?php if (isset($ticket['first_name']) && $user['role'] === 'Gestor'): ?>
+                      <?php if (isset($ticket['first_name']) && $user['role'] !== 'Cliente'): ?>
                         <span>•</span>
                         <span><?php echo htmlspecialchars($ticket['first_name'] . ' ' . $ticket['last_name']); ?></span>
                       <?php endif; ?>

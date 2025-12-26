@@ -1,13 +1,13 @@
 <?php
 /**
- * CyberCore - Avisos de Pagamento
- * Gerir avisos de atraso de pagamento
+ * CyberCore - Gestão de Servidores
+ * Gerir Servidores e Infraestrutura
  */
 
 require_once __DIR__ . '/../inc/auth.php';
 require_once __DIR__ . '/../inc/db.php';
 
-checkRole(['Gestor', 'Suporte Financeiro']);
+checkRole(['Gestor', 'Suporte Técnico']);
 
 $user = currentUser();
 $pdo = getDB();
@@ -15,7 +15,7 @@ $pdo = getDB();
 // Filtros
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $status = isset($_GET['status']) ? trim($_GET['status']) : '';
-$priority = isset($_GET['priority']) ? trim($_GET['priority']) : '';
+$type = isset($_GET['type']) ? trim($_GET['type']) : '';
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = 15;
 $offset = ($page - 1) * $perPage;
@@ -23,84 +23,77 @@ $offset = ($page - 1) * $perPage;
 try {
     // Construir query base
     $query = "SELECT 
-                w.id,
-                w.reference_number,
-                w.invoice_id,
-                w.amount_due,
-                w.status,
-                w.priority,
-                w.created_at,
-                w.due_date,
-                w.last_reminder,
-                w.reminder_count,
-                u.id as user_id,
-                u.first_name,
-                u.last_name,
-                u.company_name,
-                u.entity_type,
-                u.email,
-                i.reference_number as invoice_ref
-            FROM payment_warnings w
-            LEFT JOIN invoices i ON w.invoice_id = i.id
-            LEFT JOIN users u ON w.user_id = u.id
+                s.id,
+                s.server_name,
+                s.ip_address,
+                s.server_type,
+                s.operating_system,
+                s.cpu_cores,
+                s.ram_gb,
+                s.storage_gb,
+                s.status,
+                s.uptime_percentage,
+                s.last_check,
+                s.provider,
+                s.monthly_cost,
+                COUNT(DISTINCT h.id) as hosting_count
+            FROM servers s
+            LEFT JOIN hosting h ON h.server_id = s.id
             WHERE 1=1";
 
     $params = [];
 
     // Aplicar filtro de busca
     if ($search) {
-        $query .= " AND (w.reference_number LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)";
+        $query .= " AND (s.server_name LIKE ? OR s.ip_address LIKE ?)";
         $searchParam = "%$search%";
-        array_push($params, $searchParam, $searchParam, $searchParam, $searchParam);
+        array_push($params, $searchParam, $searchParam);
     }
 
     // Aplicar filtro de status
     if ($status) {
-        $query .= " AND w.status = ?";
+        $query .= " AND s.status = ?";
         $params[] = $status;
     }
 
-    // Aplicar filtro de prioridade
-    if ($priority) {
-        $query .= " AND w.priority = ?";
-        $params[] = $priority;
+    // Aplicar filtro de tipo
+    if ($type) {
+        $query .= " AND s.server_type = ?";
+        $params[] = $type;
     }
 
-    $query .= " ORDER BY w.priority DESC, w.due_date ASC, w.id DESC";
+    $query .= " GROUP BY s.id ORDER BY s.status DESC, s.server_name ASC";
 
     // Obter total de registos
-    $countQuery = "SELECT COUNT(*) as total FROM payment_warnings w
-                   LEFT JOIN invoices i ON w.invoice_id = i.id
-                   LEFT JOIN users u ON w.user_id = u.id
-                   WHERE 1=1";
+    $countQuery = "SELECT COUNT(DISTINCT s.id) as total FROM servers s WHERE 1=1";
     if ($search) {
-        $countQuery .= " AND (w.reference_number LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)";
+        $countQuery .= " AND (s.server_name LIKE ? OR s.ip_address LIKE ?)";
     }
     if ($status) {
-        $countQuery .= " AND w.status = ?";
+        $countQuery .= " AND s.status = ?";
     }
-    if ($priority) {
-        $countQuery .= " AND w.priority = ?";
+    if ($type) {
+        $countQuery .= " AND s.server_type = ?";
     }
 
     $countStmt = $pdo->prepare($countQuery);
     $countStmt->execute($params);
-    $totalWarnings = $countStmt->fetchColumn();
-    $totalPages = ceil($totalWarnings / $perPage);
+    $totalServers = $countStmt->fetchColumn();
+    $totalPages = ceil($totalServers / $perPage);
 
     // Obter dados com paginação
     $stmt = $pdo->prepare($query . " LIMIT ? OFFSET ?");
     $stmt->execute(array_merge($params, [$perPage, $offset]));
-    $warnings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $servers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Prioridades
-    $priorities = ['Baixa', 'Média', 'Alta', 'Crítica'];
-    $statuses = ['Ativo', 'Resolvido', 'Cancelado'];
+    // Tipos de servidor
+    $types = ['VPS', 'Dedicado', 'Cloud', 'Compartilhado', 'Outro'];
+    $statuses = ['Online', 'Offline', 'Manutenção', 'Monitorização'];
 
 } catch (PDOException $e) {
-    error_log('Erro ao obter avisos: ' . $e->getMessage());
-    $warnings = [];
-    $totalWarnings = 0;
+    error_log('Erro ao obter servidores: ' . $e->getMessage());
+    $servers = [];
+    $totalServers = 0;
 }
 
 // Helper functions
@@ -108,29 +101,12 @@ function formatCurrency($value) {
     return '€ ' . number_format($value, 2, ',', '.');
 }
 
-function formatDate($date) {
-    if (!$date) return 'N/A';
-    try {
-        $dt = new DateTime($date);
-        return $dt->format('d/m/Y');
-    } catch (Exception $e) {
-        return 'N/A';
-    }
-}
-
-function getClientName($warning) {
-    if (!$warning['user_id']) return 'N/A';
-    if ($warning['entity_type'] === 'Coletiva' && $warning['company_name']) {
-        return htmlspecialchars($warning['company_name']);
-    }
-    return htmlspecialchars($warning['first_name'] . ' ' . $warning['last_name']);
-}
-
 function getStatusBadge($status) {
     $badges = [
-        'Ativo' => ['badge-danger', '⚠️ Ativo'],
-        'Resolvido' => ['badge-success', '✓ Resolvido'],
-        'Cancelado' => ['badge-secondary', '✗ Cancelado']
+        'Online' => ['badge-success', '✓ Online'],
+        'Offline' => ['badge-danger', '✗ Offline'],
+        'Manutenção' => ['badge-warning', '⚙️ Manutenção'],
+        'Monitorização' => ['badge-secondary', '📊 Monitorização']
     ];
     
     if (isset($badges[$status])) {
@@ -139,31 +115,45 @@ function getStatusBadge($status) {
     return ['badge-secondary', htmlspecialchars($status)];
 }
 
-function getPriorityBadge($priority) {
-    $badges = [
-        'Baixa' => ['badge-secondary', '◇ Baixa'],
-        'Média' => ['badge-warning', '◆ Média'],
-        'Alta' => ['badge-warning', '● Alta'],
-        'Crítica' => ['badge-danger', '★ Crítica']
+function getTypeIcon($type) {
+    $icons = [
+        'VPS' => '⚡',
+        'Dedicado' => '🖥️',
+        'Cloud' => '☁️',
+        'Compartilhado' => '🌐',
+        'Outro' => '📱'
     ];
     
-    if (isset($badges[$priority])) {
-        return $badges[$priority];
-    }
-    return ['badge-secondary', htmlspecialchars($priority)];
+    return isset($icons[$type]) ? $icons[$type] : '📱';
 }
 
-function getDaysOverdue($dueDate) {
-    if (!$dueDate) return 0;
+function getUptimeColor($uptime) {
+    if (!$uptime) return '#999';
+    $uptime = floatval($uptime);
+    if ($uptime >= 99.9) return '#10b981';
+    if ($uptime >= 99) return '#f59e0b';
+    return '#ef4444';
+}
+
+function getLastCheckStatus($lastCheck) {
+    if (!$lastCheck) return ['❓', 'Nunca'];
+    
     try {
-        $due = new DateTime($dueDate);
-        $today = new DateTime();
-        if ($today > $due) {
-            return $today->diff($due)->days;
+        $check = new DateTime($lastCheck);
+        $now = new DateTime();
+        $diff = $now->diff($check);
+        
+        if ($diff->days === 0 && $diff->h === 0 && $diff->i < 5) {
+            return ['✓', 'Há ' . $diff->i . ' min'];
+        } elseif ($diff->days === 0 && $diff->h === 0) {
+            return ['✓', 'Há ' . $diff->i . ' min'];
+        } elseif ($diff->days === 0) {
+            return ['⚠', 'Há ' . $diff->h . 'h'];
+        } else {
+            return ['❌', 'Há ' . $diff->days . 'd'];
         }
-        return 0;
     } catch (Exception $e) {
-        return 0;
+        return ['❓', 'N/A'];
     }
 }
 ?>
@@ -173,7 +163,7 @@ function getDaysOverdue($dueDate) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avisos de Pagamento | CyberCore</title>
+    <title>Gestão de Servidores | CyberCore</title>
     <link rel="stylesheet" href="/assets/css/pages/admin-modern.css">
 </head>
 <body>
@@ -181,12 +171,12 @@ function getDaysOverdue($dueDate) {
         <!-- Header -->
         <div class="page-header">
             <div>
-                <h1>⚠️ Avisos de Pagamento</h1>
-                <p style="color: #666;">Gerir avisos e acompanhamento de atrasos</p>
+                <h1>🖥️ Servidores</h1>
+                <p style="color: #666;">Monitorizar e gerir infraestrutura de servidores</p>
             </div>
             <div class="header-actions">
-                <button class="btn btn-primary" onclick="window.location.href='/admin/payment-warning-add.php'">
-                    + Novo Aviso
+                <button class="btn btn-primary" onclick="window.location.href='/admin/servers-add.php'">
+                    + Novo Servidor
                 </button>
             </div>
         </div>
@@ -194,34 +184,33 @@ function getDaysOverdue($dueDate) {
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-box">
-                <div class="stat-label">Total de Avisos</div>
-                <div class="stat-value"><?php echo $totalWarnings; ?></div>
+                <div class="stat-label">Total de Servidores</div>
+                <div class="stat-value"><?php echo $totalServers; ?></div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Ativos</div>
-                <div class="stat-value" style="color: #ef4444;">
+                <div class="stat-label">Online</div>
+                <div class="stat-value" style="color: #10b981;">
                     <?php 
-                    $activeCount = count(array_filter($warnings, fn($w) => $w['status'] === 'Ativo'));
-                    echo $activeCount;
+                    $onlineCount = count(array_filter($servers, fn($s) => $s['status'] === 'Online'));
+                    echo $onlineCount;
                     ?>
                 </div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Valor Total em Atraso</div>
-                <div class="stat-value" style="color: #ef4444; font-size: 20px;">
+                <div class="stat-label">Custo Mensal Total</div>
+                <div class="stat-value" style="color: #007dff; font-size: 20px;">
                     <?php 
-                    $activeWarnings = array_filter($warnings, fn($w) => $w['status'] === 'Ativo');
-                    $totalDue = array_sum(array_column($activeWarnings, 'amount_due'));
-                    echo formatCurrency($totalDue);
+                    $totalCost = array_sum(array_column($servers, 'monthly_cost'));
+                    echo formatCurrency($totalCost);
                     ?>
                 </div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Críticos</div>
+                <div class="stat-label">Offline</div>
                 <div class="stat-value" style="color: #ef4444;">
                     <?php 
-                    $criticalCount = count(array_filter($warnings, fn($w) => $w['status'] === 'Ativo' && $w['priority'] === 'Crítica'));
-                    echo $criticalCount;
+                    $offlineCount = count(array_filter($servers, fn($s) => $s['status'] === 'Offline'));
+                    echo $offlineCount;
                     ?>
                 </div>
             </div>
@@ -233,7 +222,7 @@ function getDaysOverdue($dueDate) {
                 <div class="filter-row">
                     <div class="filter-group">
                         <label>Pesquisar</label>
-                        <input type="text" name="search" placeholder="Cliente ou Referência..." 
+                        <input type="text" name="search" placeholder="Nome ou IP..." 
                                value="<?php echo htmlspecialchars($search); ?>">
                     </div>
                     <div class="filter-group">
@@ -249,13 +238,13 @@ function getDaysOverdue($dueDate) {
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label>Prioridade</label>
-                        <select name="priority">
+                        <label>Tipo</label>
+                        <select name="type">
                             <option value="">Todos</option>
-                            <?php foreach ($priorities as $p): ?>
-                            <option value="<?php echo htmlspecialchars($p); ?>" 
-                                    <?php echo $priority === $p ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($p); ?>
+                            <?php foreach ($types as $t): ?>
+                            <option value="<?php echo htmlspecialchars($t); ?>" 
+                                    <?php echo $type === $t ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($t); ?>
                             </option>
                             <?php endforeach; ?>
                         </select>
@@ -268,87 +257,93 @@ function getDaysOverdue($dueDate) {
             </form>
         </div>
 
-        <!-- Tabela de Avisos -->
+        <!-- Tabela de Servidores -->
         <div class="table-container">
-            <?php if (empty($warnings)): ?>
+            <?php if (empty($servers)): ?>
                 <div class="empty-state">
                     <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="2" y="5" width="20" height="14" rx="2"></rect>
                         <line x1="2" y1="10" x2="22" y2="10"></line>
                     </svg>
-                    <p>Nenhum aviso encontrado.</p>
+                    <p>Nenhum servidor encontrado.</p>
                 </div>
             <?php else: ?>
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>Referência</th>
-                                <th>Cliente</th>
-                                <th>Montante</th>
-                                <th>Prioridade</th>
+                                <th>Nome do Servidor</th>
+                                <th>IP</th>
+                                <th>Tipo</th>
+                                <th>Recursos</th>
+                                <th>Uptime</th>
                                 <th>Status</th>
-                                <th>Atraso</th>
-                                <th>Lembretes</th>
+                                <th>Última Verificação</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($warnings as $warning): ?>
+                            <?php foreach ($servers as $server): ?>
                             <tr>
                                 <td>
-                                    <div class="client-name"><?php echo htmlspecialchars($warning['reference_number']); ?></div>
-                                    <div class="client-id"><?php echo formatDate($warning['created_at']); ?></div>
+                                    <div class="client-name"><?php echo htmlspecialchars($server['server_name']); ?></div>
+                                    <div class="client-id"><?php echo htmlspecialchars($server['provider']); ?></div>
                                 </td>
                                 <td>
-                                    <?php echo getClientName($warning); ?>
+                                    <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 3px;">
+                                        <?php echo htmlspecialchars($server['ip_address']); ?>
+                                    </code>
                                 </td>
                                 <td>
-                                    <span class="client-name"><?php echo formatCurrency($warning['amount_due']); ?></span>
+                                    <?php echo getTypeIcon($server['server_type']); ?>
+                                    <span style="font-size: 12px;">
+                                        <?php echo htmlspecialchars($server['server_type']); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span style="font-size: 12px; display: block;">
+                                        💻 <?php echo $server['cpu_cores']; ?> cores
+                                    </span>
+                                    <span style="font-size: 12px; display: block;">
+                                        🧠 <?php echo $server['ram_gb']; ?> GB RAM
+                                    </span>
+                                    <span style="font-size: 12px; display: block;">
+                                        💾 <?php echo $server['storage_gb']; ?> GB
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="font-weight: bold; color: <?php echo getUptimeColor($server['uptime_percentage']); ?>;">
+                                        <?php echo $server['uptime_percentage'] ? number_format($server['uptime_percentage'], 2) . '%' : 'N/A'; ?>
+                                    </div>
                                 </td>
                                 <td>
                                     <?php 
-                                    [$priorityClass, $priorityText] = getPriorityBadge($warning['priority']);
+                                    [$badgeClass, $badgeText] = getStatusBadge($server['status']);
                                     ?>
-                                    <span class="badge <?php echo $priorityClass; ?>">
-                                        <?php echo $priorityText; ?>
+                                    <span class="badge <?php echo $badgeClass; ?>">
+                                        <?php echo $badgeText; ?>
                                     </span>
                                 </td>
                                 <td>
                                     <?php 
-                                    [$statusClass, $statusText] = getStatusBadge($warning['status']);
+                                    [$checkIcon, $checkText] = getLastCheckStatus($server['last_check']);
                                     ?>
-                                    <span class="badge <?php echo $statusClass; ?>">
-                                        <?php echo $statusText; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php 
-                                    $daysOverdue = getDaysOverdue($warning['due_date']);
-                                    if ($daysOverdue > 0) {
-                                        echo '<span style="color: #ef4444; font-weight: bold;">' . $daysOverdue . ' dias</span>';
-                                    } else {
-                                        echo '<span style="color: #10b981;">OK</span>';
-                                    }
-                                    ?>
-                                </td>
-                                <td>
-                                    <span style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
-                                        📧 <?php echo $warning['reminder_count']; ?>x
+                                    <span style="font-size: 12px;">
+                                        <?php echo $checkIcon; ?> <?php echo $checkText; ?>
                                     </span>
                                 </td>
                                 <td>
                                     <div class="table-actions">
                                         <button class="btn btn-small btn-primary" 
-                                                onclick="window.location.href='/admin/payment-warning-view.php?id=<?php echo $warning['id']; ?>'">
+                                                onclick="window.location.href='/admin/servers-view.php?id=<?php echo $server['id']; ?>'">
                                             👁️
                                         </button>
                                         <button class="btn btn-small btn-primary" 
-                                                onclick="window.location.href='/admin/payment-warning-edit.php?id=<?php echo $warning['id']; ?>'">
+                                                onclick="window.location.href='/admin/servers-edit.php?id=<?php echo $server['id']; ?>'">
                                             ✏️
                                         </button>
                                         <button class="btn btn-small btn-danger" 
-                                                onclick="if(confirm('Tem a certeza?')) window.location.href='#delete-<?php echo $warning['id']; ?>'">
+                                                onclick="if(confirm('Tem a certeza?')) window.location.href='#delete-<?php echo $server['id']; ?>'">
                                             🗑️
                                         </button>
                                     </div>
@@ -401,4 +396,3 @@ function getDaysOverdue($dueDate) {
     </div>
 </body>
 </html>
-
