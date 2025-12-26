@@ -63,3 +63,27 @@ function isRole($role)
     $u = currentUser();
     return $u && $u['role'] === $role;
 }
+
+// Role-based access helper
+// Usage: checkRole(['Cliente','Gestor']);
+// - Redirects to login if not authenticated
+// - Redirects to no_access.php if role not allowed
+// - Returns true when access granted
+function checkRole($allowedRoles)
+{
+    if (empty($_SESSION['user_id'])) {
+        header('Location: /login.php');
+        exit;
+    }
+    $user = currentUser();
+    if (!$user) {
+        header('Location: /login.php');
+        exit;
+    }
+    $allowed = is_array($allowedRoles) ? $allowedRoles : [$allowedRoles];
+    if (!in_array($user['role'], $allowed)) {
+        header('Location: /no_access.php');
+        exit;
+    }
+    return true;
+}

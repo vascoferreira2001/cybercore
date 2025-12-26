@@ -8,7 +8,7 @@ require_once __DIR__ . '/inc/auth.php';
 require_once __DIR__ . '/inc/db.php';
 
 // Ensure user is authenticated
-requireLogin();
+checkRole(['Cliente','Suporte ao Cliente','Suporte Financeiro','Suporte Técnica','Gestor']);
 $user = currentUser();
 $pdo = getDB();
 
@@ -34,6 +34,7 @@ try {
 
 // Generate unique Client ID
 $clientId = 'CYC#' . str_pad($user['id'], 5, '0', STR_PAD_LEFT);
+$profileUrl = '/profile.php';
 
 // Safe count function with error handling
 function safeCount($pdo, $sql, $params = []) {
@@ -343,6 +344,15 @@ function getStatusBadge($status) {
         <span>Dashboard</span>
       </a>
 
+      <!-- Perfil (role-agnostic) -->
+      <a href="<?php echo htmlspecialchars($profileUrl); ?>" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Perfil</span>
+      </a>
+
       <a href="/services.php" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -432,7 +442,7 @@ function getStatusBadge($status) {
           <?php endif; ?>
         </button>
 
-        <div class="user-menu">
+        <a class="user-menu" href="<?php echo htmlspecialchars($profileUrl); ?>" aria-label="Abrir perfil do utilizador">
           <div class="user-info">
             <span class="user-name"><?php echo htmlspecialchars($userDisplayName); ?></span>
             <span class="user-id"><?php echo htmlspecialchars($clientId); ?></span>
@@ -440,7 +450,7 @@ function getStatusBadge($status) {
           <div class="user-avatar" title="<?php echo htmlspecialchars($user['email']); ?>">
             <?php echo strtoupper(substr($user['first_name'], 0, 1)); ?>
           </div>
-        </div>
+        </a>
       </div>
     </header>
 

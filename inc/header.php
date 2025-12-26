@@ -54,6 +54,9 @@ try {
   <?php endif; ?>
 </head>
 <?php $useDashboard = (defined('DASHBOARD_LAYOUT') && DASHBOARD_LAYOUT === true); ?>
+<?php $isAdminContext = (strpos($_SERVER['REQUEST_URI'], '/admin/') !== false); ?>
+<?php $profileUrl = $isAdminContext ? '../profile.php' : '/profile.php'; ?>
+<?php $isProfilePage = (strpos($_SERVER['REQUEST_URI'], 'profile.php') !== false); ?>
 <body class="<?php echo $useDashboard ? 'dashboard' : ''; ?>">
 <?php if ($useDashboard): ?>
 <div class="dashboard-app">
@@ -80,6 +83,11 @@ try {
         <!-- Painel -->
         <a href="/dashboard.php" class="nav-item">
           <span class="icon">📊</span> Painel
+        </a>
+
+        <!-- Perfil -->
+        <a href="<?php echo $profileUrl; ?>" class="nav-item<?php echo $isProfilePage ? ' active' : ''; ?>">
+          <span class="icon">👤</span> Perfil
         </a>
 
         <!-- Clientes -->
@@ -176,7 +184,7 @@ try {
         <a href="/dashboard.php" class="nav-item">
           <span class="icon">📊</span> Painel
         </a>
-        <a href="/profile.php" class="nav-item">
+        <a href="<?php echo $profileUrl; ?>" class="nav-item<?php echo $isProfilePage ? ' active' : ''; ?>">
           <span class="icon">👤</span> Perfil
         </a>
         <a href="/support.php" class="nav-item">
@@ -239,13 +247,13 @@ try {
           <?php endif; ?>
         </button>
         <?php if ($cu): ?>
-          <div class="user-chip">
+          <a class="user-chip" href="<?php echo $profileUrl; ?>" aria-label="Abrir perfil do utilizador">
             <span class="avatar"><?php echo strtoupper(substr($cu['first_name'],0,1)); ?></span>
             <span class="name"><?php 
               $displayName = !empty($cu['company_name']) ? $cu['company_name'] : ($cu['first_name'].' '.$cu['last_name']);
               echo htmlspecialchars($displayName);
             ?></span>
-          </div>
+          </a>
         <?php endif; ?>
       </div>
     </div>
