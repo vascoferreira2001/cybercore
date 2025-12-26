@@ -427,7 +427,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="cta">
         <button class="btn btn-primary" type="submit">Entrar</button>
         <div class="divider">ou</div>
-        <a class="btn btn-secondary" href="register.php">Criar conta</a>
+        <a class="btn btn-primary" href="register.php" style="text-align:center;">Criar conta</a>
       </div>
     </form>
 
