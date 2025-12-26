@@ -1,8 +1,10 @@
 -- Schema para CyberCore Área de Cliente (MySQL)
 
--- Último atualizado: 25 de Dezembro de 2025
--- Design System: Font=Source Sans 3, Cor Primária=#007dff
+-- Último atualizado: 26 de Dezembro de 2025
+-- Design System: Font=Manrope, Cor Primária=#007dff
 -- Segurança: Email UNIQUE, Identificador UNIQUE (CYC#00001), Password Hashed
+-- Sistema de Roles: Cliente, Gestor, Suporte ao Cliente, Suporte Técnica, Suporte Financeira
+-- Features: Dashboard dinâmico por role, Sidebar inteligente, Proteção de rotas
 
 CREATE DATABASE IF NOT EXISTS cybercore CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE cybercore;
@@ -35,24 +37,38 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS tickets (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
+  assigned_to INT NULL COMMENT 'ID do utilizador de suporte atribuído',
   subject VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
   status ENUM('open','pending','closed') DEFAULT 'open',
+  priority ENUM('low','normal','high','urgent') DEFAULT 'normal',
+  category VARCHAR(100) DEFAULT NULL COMMENT 'technical, billing, support, etc',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_status (status),
+  INDEX idx_assigned (assigned_to),
+  INDEX idx_priority (priority)
 );
 
 -- Tabela de domínios
 CREATE TABLE IF NOT EXISTS domains (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  domain VARCHAR(255) NOT NULL,
+  domain_name VARCHAR(255) NOT NULL COMMENT 'Nome do domínio',
+  domain VARCHAR(255) NOT NULL COMMENT 'Alias para compatibilidade',
   type ENUM('Alojamento Web', 'Alojamento de Email', 'Domínios', 'Servidores Dedicados', 'Servidores VPS', 'Serviços de Manutenção de Websites', 'Desenvolvimento de Website', 'Gestão de Redes Sociais') NOT NULL DEFAULT 'Domínios',
   registered_on DATE NULL,
   expires_on DATE NULL,
-  status ENUM('active','expired','pending') DEFAULT 'active',
+  renewal_date DATE NULL COMMENT 'Data de renovação',
+  status ENUM('active','expired','pending','suspended') DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user (user_id),
+  INDEX idx_status (status),
+  INDEX idx_renewal (renewal_date)
 );
 
 -- Tabela de configurações e seeds
@@ -103,45 +119,7 @@ INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
 INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
 ('maintenance_disable_login', '0'),
 ('maintenance_message', ''),
-('maintenance_exception_roles', 'Gestor'),
-('maintenance_hide_menus', '[]');
-
--- Estrutura de departamentos e permissões
-CREATE TABLE IF NOT EXISTS departments (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL UNIQUE,
-  active TINYINT(1) DEFAULT 1,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-INSERT IGNORE INTO departments (name, active) VALUES
-('Suporte ao Cliente', 1),
-('Suporte Técnico', 1),
-('Suporte Financeiro', 1);
-
-CREATE TABLE IF NOT EXISTS department_permissions (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  department_id INT NOT NULL,
-  permission_key VARCHAR(150) NOT NULL,
-  permission_value LONGTEXT,
-  permission_scope JSON,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY dept_permission (department_id, permission_key),
-  FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS client_permissions (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  permission_key VARCHAR(100) NOT NULL UNIQUE,
-  allowed TINYINT(1) DEFAULT 0
-);
-
-INSERT IGNORE INTO client_permissions (permission_key, allowed) VALUES
-('disable_account_creation', 0),
-('verify_email_before_login', 0),
-('client_view_documents', 1),
-('client_add_documents', 0);
+('maintenance_exception_roles', 'Gestor');
 
 -- Tabela para resets de password
 CREATE TABLE IF NOT EXISTS password_resets (
@@ -153,84 +131,18 @@ CREATE TABLE IF NOT EXISTS password_resets (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Tabelas de serviços
-CREATE TABLE IF NOT EXISTS web_hosting (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  plan VARCHAR(100) NOT NULL,
-  storage VARCHAR(50),
-  bandwidth VARCHAR(50),
-  status ENUM('active','inactive','pending') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS email_hosting (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  plan VARCHAR(100) NOT NULL,
-  storage VARCHAR(50),
-  status ENUM('active','inactive','pending') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS dedicated_servers (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  cpu VARCHAR(100),
-  ram VARCHAR(50),
-  storage VARCHAR(100),
-  status ENUM('active','inactive','pending') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS vps_servers (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  cpu VARCHAR(100),
-  ram VARCHAR(50),
-  storage VARCHAR(100),
-  status ENUM('active','inactive','pending') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS website_maintenance (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  plan VARCHAR(100) NOT NULL,
-  status ENUM('active','inactive','pending') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS website_development (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  project_name VARCHAR(255) NOT NULL,
-  status ENUM('active','inactive','pending') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS social_media_management (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  platforms TEXT,
-  status ENUM('active','inactive','pending') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NULL,
-  type VARCHAR(100) NOT NULL,
+  type VARCHAR(100) NOT NULL COMMENT 'access_denied, login, logout, update_service, etc',
   message TEXT NOT NULL,
+  ip_address VARCHAR(45) NULL COMMENT 'IP do utilizador',
+  user_agent TEXT NULL COMMENT 'User agent do browser',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_user (user_id),
+  INDEX idx_type (type),
+  INDEX idx_created (created_at)
 );
 
 CREATE TABLE IF NOT EXISTS invoices (
@@ -239,9 +151,14 @@ CREATE TABLE IF NOT EXISTS invoices (
   reference VARCHAR(100) NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
   due_date DATE,
+  paid_at TIMESTAMP NULL COMMENT 'Data de pagamento',
   status ENUM('unpaid','paid','overdue') DEFAULT 'unpaid',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user (user_id),
+  INDEX idx_status (status),
+  INDEX idx_due_date (due_date)
 );
 
 -- Tabela de modelos de email
@@ -273,9 +190,52 @@ INSERT IGNORE INTO email_templates (template_key, template_name, subject, body_h
 -- Tabela de changelog de modificações
 CREATE TABLE IF NOT EXISTS changelog (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  version VARCHAR(20),
-  migration_file VARCHAR(255),
-  status ENUM('pending','completed','failed') DEFAULT 'pending',
+  version VARCHAR(20) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  release_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  migration_file VARCHAR(255) NULL,
+  status ENUM('pending','completed','failed') DEFAULT 'completed',
   executed_at TIMESTAMP NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_version (version),
+  INDEX idx_release_date (release_date)
+);
+
+-- Inserir versões iniciais do changelog
+INSERT IGNORE INTO changelog (version, title, description, release_date) VALUES 
+('1.0.0', 'Lançamento Inicial', 'Sistema completo de gestão de clientes com dashboard, serviços, faturação e suporte', '2025-12-25 00:00:00'),
+('1.1.0', 'Sistema de Roles e Permissões', 'Implementado sistema completo de roles (Cliente, Gestor, Suporte) com dashboard dinâmico, sidebar inteligente e proteção de rotas', '2025-12-26 00:00:00');
+
+-- Tabela de notificações
+CREATE TABLE IF NOT EXISTS notifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  type ENUM('info','success','warning','error') DEFAULT 'info',
+  is_read TINYINT(1) DEFAULT 0,
+  action_url VARCHAR(500) NULL COMMENT 'URL para ação relacionada',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  read_at TIMESTAMP NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user (user_id),
+  INDEX idx_read (is_read),
+  INDEX idx_created (created_at)
+);
+
+-- Tabela de sessões (opcional, para controle de sessões ativas)
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  session_token VARCHAR(128) NOT NULL UNIQUE,
+  ip_address VARCHAR(45) NOT NULL,
+  user_agent TEXT,
+  last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_token (session_token),
+  INDEX idx_user (user_id),
+  INDEX idx_expires (expires_at)
 );
