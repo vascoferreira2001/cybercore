@@ -14,6 +14,9 @@ if (isset($_SESSION['user_id'])) {
 
 $pdo = getDB();
 $siteLogo = getSetting($pdo, 'site_logo');
+$loginBg = getSetting($pdo, 'login_background');
+$bgUrl = ($loginBg && getAssetPath($loginBg) && file_exists(getAssetPath($loginBg))) ? htmlspecialchars(getAssetUrl($loginBg)) : '';
+$backgroundStyle = $bgUrl ? 'background: url(' . $bgUrl . ') center/cover no-repeat fixed, #0f172a;' : '';
 $errors = [];
 $maxAttempts = 5;
 $lockoutTime = 600;
@@ -357,7 +360,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   </style>
 </head>
-<body>
+<body <?php echo $backgroundStyle ? 'style="' . $backgroundStyle . '"' : ''; ?>>
 
 <div class="shell">
   <div class="hero">
@@ -376,8 +379,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <div>
         <p style="text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; color: var(--accent-2); font-weight: 700;">Aceda ao seu painel</p>
-        <h1 class="hero-title">Bem-vindo de volta</h1>
-        <p class="hero-subtitle">Faça login com email ou identificador para gerir domínios, faturação e suporte num só painel.</p>
+        <h1 class="hero-title">Bem-vindo(a) à CyberCore</h1>
+        <p class="hero-subtitle">Faça login com o email ou o seu identificador para gerir os seus serviços, faturação e pedir suporte num só Painel.</p>
 
         <ul class="hero-list">
           <li><span class="check">✓</span> Login seguro com email ou CYC#ID</li>
@@ -387,10 +390,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     </div>
 
-    <div class="hero-cta">
-      <p>Ainda não tem conta? Crie já e comece a usar a área de cliente.</p>
-      <a class="ghost-btn" href="register.php">Criar conta</a>
-    </div>
   </div>
 
   <div class="panel">
