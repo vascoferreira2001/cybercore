@@ -1,5 +1,7 @@
 # Sistema de Permissões - Guia de Utilização
 
+> ⚠️ Obsoleto: este guia descreve o modelo antigo baseado em departamentos. O modelo atual é role-based em `inc/menu_config.php` + `inc/permissions.php`. Para a referência oficial, use [docs/PERMISSIONS.md](PERMISSIONS.md).
+
 ## Overview
 
 O sistema de permissões controla o acesso granular a recursos e funcionalidades baseado nas permissões configuradas em **Configuração > Funções da Equipa**.

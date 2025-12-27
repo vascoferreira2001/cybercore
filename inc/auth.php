@@ -120,33 +120,6 @@ function checkRole($allowedRoles)
 }
 
 /**
- * Verifica se usuário tem permissão específica
- * @param string $permission - Nome da permissão (ex: 'can_manage_users')
- * @return bool
- */
-function hasPermission($permission) {
-    $user = currentUser();
-    if (!$user) return false;
-    
-    require_once __DIR__ . '/menu_config.php';
-    return \hasPermission(normalizeRoleName($user['role']), $permission);
-}
-
-/**
- * Require permission ou retorna 403
- * @param string $permission - Nome da permissão
- */
-function requirePermission($permission) {
-    if (!hasPermission($permission)) {
-        http_response_code(403);
-        echo '<h1>403 - Acesso Negado</h1>';
-        echo '<p>Você não tem permissão para acessar este recurso.</p>';
-        echo '<p>Permissão necessária: <code>' . htmlspecialchars($permission) . '</code></p>';
-        exit;
-    }
-}
-
-/**
  * Normaliza nomes de roles para a forma canónica solicitada
  * @param string $role
  * @return string

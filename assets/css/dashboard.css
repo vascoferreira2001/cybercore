@@ -1,0 +1,214 @@
+:root {
+  --bg: #0f172a;
+  --panel: #111827;
+  --card: #1f2937;
+  --border: #1f2937;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --accent: #3b82f6;
+  --accent-strong: #2563eb;
+  --success: #22c55e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.dashboard-app {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.sidebar {
+  width: 260px;
+  background: var(--panel);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.logo-text { font-size: 16px; }
+
+.sidebar-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.sidebar-nav { padding: 10px; flex: 1; overflow-y: auto; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background .15s ease, color .15s ease;
+}
+
+.nav-item:hover { background: rgba(255,255,255,0.06); }
+
+.nav-item.active { background: rgba(59,130,246,0.15); color: #fff; }
+
+.nav-icon { width: 18px; height: 18px; }
+
+.nav-divider {
+  margin: 12px 8px 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+
+.sidebar-footer { padding: 12px 10px; border-top: 1px solid var(--border); }
+
+.logout-btn { color: #fca5a5; }
+
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(145deg, #0f172a 0%, #111827 45%, #0b1222 100%);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.85);
+  z-index: 10;
+}
+
+.topbar-left, .topbar-right { display: flex; align-items: center; gap: 14px; }
+
+.mobile-menu-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  min-width: 240px;
+}
+
+.search-box input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+
+.user-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+
+.user-info { display: flex; flex-direction: column; }
+
+.user-name { font-weight: 600; }
+
+.user-id { font-size: 12px; color: var(--muted); }
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #fff;
+}
+
+.dashboard-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.dashboard-header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25);
+}
+
+.dashboard-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .dashboard-app { flex-direction: column; }
+  .sidebar { position: fixed; inset: 0 auto 0 -280px; transition: transform .25s ease; z-index: 20; }
+  .sidebar.open { transform: translateX(280px); }
+  .main-wrapper { margin-left: 0; }
+}

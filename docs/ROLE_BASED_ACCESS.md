@@ -1,5 +1,7 @@
 # 🔒 Sistema de Proteção de Rotas e Dashboard Dinâmico
 
+> Atualizado: use como referência rápida, mas para a fonte de verdade consulte [docs/PERMISSIONS.md](PERMISSIONS.md) (permissões), [docs/NAVIGATION.md](NAVIGATION.md) (menu por role) e [docs/LAYOUTS.md](LAYOUTS.md) (layouts/partials).
+
 ## 📋 Visão Geral
 
 O CyberCore agora possui um sistema completo de proteção de rotas baseado em cargos (roles), com:

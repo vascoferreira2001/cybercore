@@ -11,6 +11,8 @@ checkRole(['Gestor', 'Suporte Financeiro']);
 $user = currentUser();
 $GLOBALS['currentUser'] = $user;
 
+requirePermission('can_manage_fiscal_approvals', $user);
+
 $pdo = getDB();
 
 // Obter solicitações pendentes

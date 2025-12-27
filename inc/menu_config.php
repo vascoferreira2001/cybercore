@@ -277,6 +277,8 @@ function getRolePermissions($role) {
             'can_manage_invoices' => true,
             'can_view_all_payments' => true,
             'can_manage_payments' => true,
+            'can_manage_expenses' => true,
+            'can_manage_fiscal_approvals' => true,
             'can_create_tickets' => true,
             'can_view_own_tickets' => true,
             'can_view_all_tickets' => true,
@@ -293,6 +295,8 @@ function getRolePermissions($role) {
             'can_manage_invoices' => true,
             'can_view_all_payments' => true,
             'can_manage_payments' => true,
+            'can_manage_expenses' => true,
+            'can_manage_fiscal_approvals' => true,
             'can_view_all_tickets' => true,
             'can_manage_tickets' => true,
             'can_view_all_clients' => true,
@@ -316,7 +320,7 @@ function getRolePermissions($role) {
  * @param string $permission - Nome da permissão
  * @return bool
  */
-function hasPermission($role, $permission) {
+function roleHasPermission($role, $permission) {
     $rolePermissions = getRolePermissions($role);
     return isset($rolePermissions[$permission]) && $rolePermissions[$permission] === true;
 }
