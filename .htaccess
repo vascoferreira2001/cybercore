@@ -1,19 +1,174 @@
-# Security and routing baseline
-Options -Indexes
+# ==========================================
+# CyberCore Hosting Platform - Production .htaccess
+# ==========================================
 
-# Protect sensitive folders
-<Directory "/inc">
-  Deny from all
-</Directory>
-<Directory "/config">
-  Deny from all
-</Directory>
+# ==========================================
+# 1. HTTPS ENFORCEMENT
+# ==========================================
+RewriteEngine On
 
-# Restrict direct access to config/php files at root if any
-<FilesMatch "^(config|database)\.php$">
-  Deny from all
+# Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Force www (optional - uncomment if needed)
+# RewriteCond %{HTTP_HOST} !^www\. [NC]
+# RewriteRule ^(.*)$ https://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ==========================================
+# 2. SECURITY HEADERS
+# ==========================================
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Prevent MIME sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Content Security Policy
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self';"
+    
+    # Strict Transport Security (HSTS) - Enable after testing HTTPS
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    
+    # Permissions Policy
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# ==========================================
+# 3. FILE PROTECTION
+# ==========================================
+
+# Protect sensitive files
+<FilesMatch "^(\.env|\.env\.example|\.htaccess|\.htpasswd|\.user\.ini|php\.ini|composer\.json|composer\.lock|package\.json|README\.md|\.git.*|\.sql|.*\.log)$">
+    Order allow,deny
+    Deny from all
 </FilesMatch>
 
-# Basic PHP settings (adjust per hosting)
-php_value session.cookie_httponly 1
-php_value session.use_strict_mode 1
+# Protect directories
+RedirectMatch 403 ^/\.git
+RedirectMatch 403 ^/sql
+RedirectMatch 403 ^/docs
+RedirectMatch 403 ^/scripts
+RedirectMatch 403 ^/inc
+RedirectMatch 403 ^/config
+
+# Prevent directory browsing
+Options -Indexes
+
+# Disable PHP execution in upload directories
+<Directory "/assets/uploads">
+    php_flag engine off
+    <FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</Directory>
+
+# ==========================================
+# 4. PHP SETTINGS (if not using .user.ini)
+# ==========================================
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag display_startup_errors Off
+    php_value error_reporting 0
+    php_flag log_errors On
+    php_value error_log /var/www/vhosts/yourdomain.com/logs/php_error.log
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 30
+    php_value session.cookie_httponly 1
+    php_value session.cookie_secure 1
+    php_value session.cookie_samesite Lax
+</IfModule>
+
+# ==========================================
+# 5. COMPRESSION
+# ==========================================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml application/rss+xml
+</IfModule>
+
+# ==========================================
+# 6. CACHING
+# ==========================================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Images
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    
+    # Fonts
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    
+    # Default
+    ExpiresDefault "access plus 1 week"
+</IfModule>
+
+# ==========================================
+# 7. URL REWRITING (Clean URLs)
+# ==========================================
+
+# Remove .php extension (optional)
+# RewriteCond %{REQUEST_FILENAME} !-d
+# RewriteCond %{REQUEST_FILENAME}\.php -f
+# RewriteRule ^(.*)$ $1.php [L]
+
+# Custom error pages
+ErrorDocument 404 /404.php
+ErrorDocument 500 /404.php
+ErrorDocument 403 /no_access.php
+
+# ==========================================
+# 8. LIMIT REQUEST SIZE
+# ==========================================
+LimitRequestBody 10485760
+
+# ==========================================
+# 9. BLOCK BAD BOTS AND SCANNERS
+# ==========================================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Block common vulnerability scanners
+    RewriteCond %{HTTP_USER_AGENT} (libwww-perl|wget|python|nikto|curl|scan|java|winhttp|clshttp|loader) [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} (%0A|%0D|%27|%3C|%3E|%00) [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} (;|<|>|'|"|\)|\(|%0A|%0D|%22|%27|%28|%3C|%3E|%00).*(libwww-perl|wget|python|nikto|curl|scan|java|winhttp|HTTrack|clshttp|archiver|loader|email|harvest|extract|grab|miner) [NC,OR]
+    RewriteCond %{THE_REQUEST} (\?|\*|%2a)+(%20+|\\s+|%20+\\s+|\\s+%20+|\\s+%20+\\s+)(http|https)(:/|/) [NC,OR]
+    RewriteCond %{THE_REQUEST} etc/passwd [NC,OR]
+    RewriteCond %{THE_REQUEST} cgi-bin [NC,OR]
+    RewriteCond %{THE_REQUEST} (%0A|%0D) [NC]
+    RewriteRule .* - [F,L]
+    
+    # Block SQL injection attempts
+    RewriteCond %{QUERY_STRING} (union|select|insert|drop|grant|update|delete|--|javascript|script|cookie|document\.cookie) [NC]
+    RewriteRule .* - [F,L]
+    
+    # Block file injection attempts
+    RewriteCond %{QUERY_STRING} [a-zA-Z0-9_]=http:// [OR]
+    RewriteCond %{QUERY_STRING} [a-zA-Z0-9_]=(\.\.//?)+ [OR]
+    RewriteCond %{QUERY_STRING} [a-zA-Z0-9_]=/([a-z0-9_.]//?)+ [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# ==========================================
+# 10. DISABLE SERVER SIGNATURE
+# ==========================================
+ServerSignature Off
