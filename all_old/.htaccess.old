@@ -1,0 +1,32 @@
+# CyberCore root routing
+RewriteEngine On
+
+# Redirect legacy client area routes to /manager (exclude website pages)
+RewriteCond %{REQUEST_URI} !^/manager/
+RewriteCond %{REQUEST_URI} !^/website/
+RewriteRule ^(dashboard|services|domains|finance|support|logs|updates|login|logout|register|register-step1|register-step2|verify_email|forgot_password|reset_password)\.php$ manager/$1.php [L,R=302]
+
+# Redirect legacy admin routes to /manager/admin
+RewriteCond %{REQUEST_URI} !^/manager/
+RewriteCond %{REQUEST_URI} !^/website/
+RewriteRule ^admin/(.*)\.php$ manager/admin/$1.php [L,R=302]
+
+# Keep website pages at root
+# index.php, hosting.php, solutions.php, pricing.php, contact.php, contact_submit.php, privacy.php, terms.php
+
+# Custom 404 page
+ErrorDocument 404 /404.php
+
+# Redirect /website/* pages to root equivalents
+RewriteCond %{REQUEST_URI} ^/website/index\.php$
+RewriteRule ^website/index\.php$ / [L,R=302]
+RewriteCond %{REQUEST_URI} ^/website/hosting\.php$
+RewriteRule ^website/hosting\.php$ /hosting.php [L,R=302]
+RewriteCond %{REQUEST_URI} ^/website/solutions\.php$
+RewriteRule ^website/solutions\.php$ /solutions.php [L,R=302]
+RewriteCond %{REQUEST_URI} ^/website/pricing\.php$
+RewriteRule ^website/pricing\.php$ /pricing.php [L,R=302]
+RewriteCond %{REQUEST_URI} ^/website/contact\.php$
+RewriteRule ^website/contact\.php$ /contact.php [L,R=302]
+RewriteCond %{REQUEST_URI} ^/website/contact_submit\.php$
+RewriteRule ^website/contact_submit\.php$ /contact_submit.php [L,R=302]

@@ -1,0 +1,256 @@
+/**
+ * About Page Styles
+ */
+
+.about-page {
+  padding: 0;
+}
+
+.content-section {
+  padding: 80px 20px;
+  background: #fff;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.content-text h2 {
+  font-size: 36px;
+  font-weight: 700;
+  color: #123659;
+  margin-bottom: 24px;
+}
+
+.content-text p {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #5a6c7d;
+  margin-bottom: 20px;
+}
+
+.content-text p strong {
+  color: #123659;
+  font-weight: 600;
+}
+
+.stats-card {
+  background: linear-gradient(135deg, #123659 0%, #1e4976 100%);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 16px 48px rgba(18, 54, 89, 0.2);
+}
+
+.stat-item {
+  padding: 24px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  text-align: center;
+}
+
+.stat-item:last-child {
+  border-bottom: none;
+}
+
+.stat-number {
+  font-size: 48px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: rgba(255,255,255,0.8);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.values-section {
+  padding: 80px 20px;
+  background: #f8f9fa;
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.value-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.value-card:hover {
+  border-color: #007dff;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.1);
+}
+
+.value-icon {
+  color: #007dff;
+  margin-bottom: 20px;
+}
+
+.value-card h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #123659;
+  margin-bottom: 12px;
+}
+
+.value-card p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #5a6c7d;
+}
+
+.infrastructure-section {
+  padding: 80px 20px;
+  background: #fff;
+}
+
+.infra-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.infra-card {
+  background: #f8fbff;
+  border: 1px solid #d4e5ff;
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.infra-card:hover {
+  background: #fff;
+  border-color: #007dff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,125,255,0.1);
+}
+
+.infra-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #123659;
+  margin-bottom: 12px;
+}
+
+.infra-card p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #5a6c7d;
+  margin: 0;
+}
+
+.certifications-section {
+  padding: 80px 20px;
+  background: #f8f9fa;
+}
+
+.cert-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.cert-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.cert-card:hover {
+  border-color: #007dff;
+  transform: scale(1.05);
+}
+
+.cert-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #007dff 0%, #0056b3 100%);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.cert-card p {
+  font-size: 13px;
+  color: #5a6c7d;
+  margin: 0;
+}
+
+.team-section {
+  padding: 80px 20px;
+  background: #fff;
+}
+
+.team-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.team-stat {
+  text-align: center;
+}
+
+.team-stat-number {
+  font-size: 56px;
+  font-weight: 700;
+  color: #007dff;
+  margin-bottom: 8px;
+}
+
+.team-stat-label {
+  font-size: 16px;
+  color: #5a6c7d;
+}
+
+@media (max-width: 768px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  
+  .values-grid,
+  .infra-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .content-text h2 {
+    font-size: 28px;
+  }
+  
+  .stat-number {
+    font-size: 36px;
+  }
+  
+  .team-stat-number {
+    font-size: 42px;
+  }
+}

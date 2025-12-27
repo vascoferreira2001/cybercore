@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /manager/
+Sitemap: https://www.dominio.pt/sitemap.xml
