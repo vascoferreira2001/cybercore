@@ -1,0 +1,5 @@
+/* CyberCore - Modern Aggregated Styles */
+/* Single entry-point for all pages */
+
+@import url('design-system.css');
+@import url('pages/dashboard-modern.css');

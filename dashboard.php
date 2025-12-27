@@ -306,8 +306,6 @@ function getStatusBadge($status) {
 <?php
 $GLOBALS['currentUser'] = $user;
 $GLOBALS['unreadNotifications'] = $unreadNotifications;
-// Visible version banner to confirm deployment
-define('CYBERCORE_BUILD_ID', 'build-' . date('Ymd-His'));
 
 ob_start();
 ?>
@@ -583,11 +581,6 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
-// Append a small banner to help verify live deployments
-$content = '<div class="card" style="margin-bottom:12px;background:#0b1222;border:1px dashed #334155;color:#93c5fd">\n'
-          . '<strong>Versão:</strong> ' . htmlspecialchars(CYBERCORE_BUILD_ID) . ' • ' . htmlspecialchars($_SERVER['SERVER_NAME'] ?? '')
-          . '</div>' . $content;
-
 echo renderDashboardLayout('Dashboard', 'Visão geral da sua conta', $content, $sidebarActive);
 echo '<script src="/assets/js/pages/dashboard-modern.js"></script>';
 ?>

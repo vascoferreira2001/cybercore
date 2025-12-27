@@ -1,0 +1,10 @@
+dashboard.php 8a0bc17cb8ddf1dd67d5d06b46917fde
+inc/dashboard_helper.php 329979d8fdbd5ce6852826a3e584017f
+inc/layouts/sidebar.php 3b897b913b2c2c918459632c5177b70a
+inc/layouts/topbar.php b729643488ae545b29a0cce21396dab4
+inc/permissions.php 930965572c46cc0b85a13c1aed9d9159
+inc/menu_config.php ec7a517a35c64f624d88a6bfc3f8d176
+admin/expenses.php f77d8c1940eb0aaf05e2b59b93f73d2c
+admin/fiscal-approvals.php fe1b1b23c8d2a215b4f046e3285f3370
+assets/css/dashboard.css 2d0e2bcff047a81574e7e19c3bd47612
+assets/css/pages/dashboard-modern.css 466dbc9d47bf85892b22561c46b343a5
