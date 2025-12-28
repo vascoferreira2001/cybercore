@@ -69,6 +69,21 @@ CREATE TABLE IF NOT EXISTS `user_sessions` (
   CONSTRAINT `fk_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Login attempts (rate limiting)
+CREATE TABLE IF NOT EXISTS `login_attempts` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `ip_address` VARCHAR(45) NOT NULL,
+  `username` VARCHAR(255) NOT NULL,
+  `attempt_timestamp` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `success` TINYINT(1) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_login_attempts_ip` (`ip_address`),
+  KEY `idx_login_attempts_username` (`username`),
+  KEY `idx_login_attempts_timestamp` (`attempt_timestamp`),
+  KEY `idx_login_attempts_ip_timestamp` (`ip_address`, `attempt_timestamp`),
+  KEY `idx_login_attempts_username_timestamp` (`username`, `attempt_timestamp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ============================================================================
 -- SERVICES & HOSTING
 -- ============================================================================
@@ -109,6 +124,13 @@ CREATE TABLE IF NOT EXISTS `domains` (
   `renewal_date` DATE DEFAULT NULL,
   `status` ENUM('active','expired','pending','suspended') DEFAULT 'active',
   `auto_renew` TINYINT(1) DEFAULT 1,
+  `plesk_domain_id` VARCHAR(100) DEFAULT NULL COMMENT 'Plesk API domain ID',
+  `nameserver_1` VARCHAR(255) DEFAULT NULL,
+  `nameserver_2` VARCHAR(255) DEFAULT NULL,
+  `nameserver_3` VARCHAR(255) DEFAULT NULL,
+  `nameserver_4` VARCHAR(255) DEFAULT NULL,
+  `last_sync_at` DATETIME DEFAULT NULL COMMENT 'Last Plesk API sync timestamp',
+  `renewal_invoice_id` BIGINT UNSIGNED DEFAULT NULL COMMENT 'Invoice ID for renewal',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -118,8 +140,57 @@ CREATE TABLE IF NOT EXISTS `domains` (
   KEY `idx_domains_status` (`status`),
   KEY `idx_domains_renewal` (`renewal_date`),
   KEY `idx_domains_expires` (`expires_on`),
+  KEY `idx_domains_last_sync` (`last_sync_at`),
+  KEY `idx_domains_user_status` (`user_id`, `status`),
   CONSTRAINT `fk_domains_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_domains_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE SET NULL
+  CONSTRAINT `fk_domains_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_domains_invoice` FOREIGN KEY (`renewal_invoice_id`) REFERENCES `invoices` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Domain history and automation tracking
+CREATE TABLE IF NOT EXISTS `domain_history` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `domain_id` BIGINT UNSIGNED NOT NULL,
+  `action` VARCHAR(100) NOT NULL COMMENT 'sync, renew, suspend, expire_notice, etc',
+  `status_before` VARCHAR(50) DEFAULT NULL,
+  `status_after` VARCHAR(50) DEFAULT NULL,
+  `description` TEXT,
+  `triggered_by` VARCHAR(100) COMMENT 'user_id, cron, plesk_api, system',
+  `result` ENUM('success','failed','pending') DEFAULT 'pending',
+  `plesk_response` LONGTEXT COMMENT 'Plesk API response (JSON)',
+  `error_message` TEXT,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_domain_history_domain` (`domain_id`),
+  KEY `idx_domain_history_action` (`action`),
+  KEY `idx_domain_history_result` (`result`),
+  KEY `idx_domain_history_created` (`created_at`),
+  KEY `idx_domain_history_domain_created` (`domain_id`, `created_at`),
+  CONSTRAINT `fk_domain_history_domain` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Domain automation events (cron job tracking)
+CREATE TABLE IF NOT EXISTS `domain_automation` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `domain_id` BIGINT UNSIGNED NOT NULL,
+  `event_type` ENUM('expiration_30d','expiration_15d','expiration_7d','expiration_alert','renewal_auto','renewal_invoice','suspension_overdue','cleanup') NOT NULL,
+  `scheduled_for` DATETIME DEFAULT NULL,
+  `processed_at` DATETIME DEFAULT NULL,
+  `status` ENUM('pending','completed','failed','skipped') DEFAULT 'pending',
+  `email_sent` TINYINT(1) DEFAULT 0,
+  `invoice_id` BIGINT UNSIGNED DEFAULT NULL,
+  `notes` TEXT,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_domain_automation_domain` (`domain_id`),
+  KEY `idx_domain_automation_event` (`event_type`),
+  KEY `idx_domain_automation_status` (`status`),
+  KEY `idx_domain_automation_scheduled` (`scheduled_for`),
+  KEY `idx_domain_automation_processed` (`processed_at`),
+  KEY `idx_domain_automation_domain_status` (`domain_id`, `status`),
+  CONSTRAINT `fk_domain_automation_domain` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_domain_automation_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
@@ -295,6 +366,30 @@ INSERT IGNORE INTO `email_templates` (`template_key`, `template_name`, `subject`
 -- Welcome email template
 INSERT IGNORE INTO `email_templates` (`template_key`, `template_name`, `subject`, `body_html`, `body_text`, `variables`, `is_system`, `is_active`) VALUES 
 ('welcome_email', 'Bem-vindo', 'Bem-vindo ao {{site_name}}!', '<html><body style="font-family:Arial,sans-serif;background:#f4f5f7;padding:20px"><table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;margin:0 auto"><tr><td style="padding:32px"><h1 style="color:#123659;font-size:24px">Bem-vindo ao {{site_name}}!</h1><p style="color:#5a6c7d;line-height:1.6">Olá {{user_name}},</p><p style="color:#5a6c7d;line-height:1.6">A sua conta foi ativada com sucesso. Pode agora aceder à sua área de cliente.</p><p style="margin:24px 0"><a href="{{dashboard_link}}" style="background:#32a852;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block">Aceder ao Dashboard</a></p></td></tr></table></body></html>', 'Olá {{user_name}}, Bem-vindo ao {{site_name}}! Aceda ao dashboard: {{dashboard_link}}', '["site_name","user_name","dashboard_link"]', 1, 1);
+
+-- ============================================================================
+-- DOMAIN MANAGEMENT EMAIL TEMPLATES
+-- ============================================================================
+
+-- Domain renewal reminder 30 days
+INSERT IGNORE INTO `email_templates` (`template_key`, `template_name`, `subject`, `body_html`, `body_text`, `variables`, `is_system`, `is_active`) VALUES 
+('domain_renewal_30d', 'Lembrete de Renovação - 30 dias', 'Domínio {{domain}} expira em 30 dias', '<html><body style="font-family:Arial,sans-serif;background:#f4f5f7;padding:20px"><table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;margin:0 auto"><tr><td style="padding:32px"><h1 style="color:#123659;font-size:24px">Lembrete de Renovação</h1><p style="color:#5a6c7d;line-height:1.6">Olá {{user_name}},</p><p style="color:#5a6c7d;line-height:1.6">O seu domínio <strong>{{domain}}</strong> expira em <strong>30 dias</strong> ({{expiry_date}}).</p><p style="color:#5a6c7d;line-height:1.6">Recomendamos que renove o seu domínio assim que possível para evitar a perda de acesso.</p><p style="margin:24px 0"><a href="{{renewal_link}}" style="background:#32a852;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block">Renovar Domínio Agora</a></p></td></tr></table></body></html>', 'Olá {{user_name}}, O domínio {{domain}} expira em 30 dias ({{expiry_date}}). Renovar: {{renewal_link}}', '["site_name","user_name","domain","expiry_date","renewal_link"]', 1, 1);
+
+-- Domain renewal reminder 15 days
+INSERT IGNORE INTO `email_templates` (`template_key`, `template_name`, `subject`, `body_html`, `body_text`, `variables`, `is_system`, `is_active`) VALUES 
+('domain_renewal_15d', 'Lembrete de Renovação - 15 dias', 'URGENTE: {{domain}} expira em 15 dias', '<html><body style="font-family:Arial,sans-serif;background:#f4f5f7;padding:20px"><table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;margin:0 auto"><tr><td style="padding:32px"><h1 style="color:#e67e22;font-size:24px">⚠️ Lembrete Urgente</h1><p style="color:#5a6c7d;line-height:1.6">Olá {{user_name}},</p><p style="color:#c0392b;line-height:1.6;font-weight:bold">O seu domínio <strong>{{domain}}</strong> expira em apenas <strong>15 dias</strong> ({{expiry_date}}).</p><p style="color:#5a6c7d;line-height:1.6">Se não renovar o seu domínio a tempo, poderá perder a capacidade de aceder ao seu website e email.</p><p style="margin:24px 0"><a href="{{renewal_link}}" style="background:#c0392b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block">Renovar Imediatamente</a></p></td></tr></table></body></html>', 'URGENTE: {{domain}} expira em 15 dias ({{expiry_date}}). Renovar agora: {{renewal_link}}', '["site_name","user_name","domain","expiry_date","renewal_link"]', 1, 1);
+
+-- Domain renewal reminder 7 days
+INSERT IGNORE INTO `email_templates` (`template_key`, `template_name`, `subject`, `body_html`, `body_text`, `variables`, `is_system`, `is_active`) VALUES 
+('domain_renewal_7d', 'URGENTE: Renove o seu domínio AGORA', 'CRÍTICO: {{domain}} expira em 7 dias', '<html><body style="font-family:Arial,sans-serif;background:#f4f5f7;padding:20px"><table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;margin:0 auto"><tr><td style="padding:32px"><h1 style="color:#c0392b;font-size:24px">🚨 CRÍTICO - Ação Necessária</h1><p style="color:#5a6c7d;line-height:1.6">Olá {{user_name}},</p><p style="color:#c0392b;line-height:1.6;font-weight:bold;font-size:16px">O seu domínio <strong>{{domain}}</strong> EXPIRA EM 7 DIAS ({{expiry_date}}).</p><p style="color:#5a6c7d;line-height:1.6">Isto é a última notificação. Renove o seu domínio HOJE para evitar a interrupção do seu serviço.</p><p style="margin:24px 0"><a href="{{renewal_link}}" style="background:#c0392b;color:#fff;padding:14px 28px;text-decoration:none;border-radius:4px;display:inline-block;font-weight:bold">RENOVAR AGORA - CLIQUE AQUI</a></p></td></tr></table></body></html>', 'CRÍTICO: {{domain}} expira em 7 dias. Renove AGORA: {{renewal_link}}', '["site_name","user_name","domain","expiry_date","renewal_link"]', 1, 1);
+
+-- Domain renewed successfully
+INSERT IGNORE INTO `email_templates` (`template_key`, `template_name`, `subject`, `body_html`, `body_text`, `variables`, `is_system`, `is_active`) VALUES 
+('domain_renewed', 'Domínio Renovado com Sucesso', '✓ {{domain}} renovado até {{new_expiry_date}}', '<html><body style="font-family:Arial,sans-serif;background:#f4f5f7;padding:20px"><table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;margin:0 auto"><tr><td style="padding:32px"><h1 style="color:#32a852;font-size:24px">✓ Domínio Renovado</h1><p style="color:#5a6c7d;line-height:1.6">Olá {{user_name}},</p><p style="color:#5a6c7d;line-height:1.6">O seu domínio <strong>{{domain}}</strong> foi renovado com sucesso!</p><table style="width:100%;border-collapse:collapse;margin:20px 0"><tr style="background:#f8f9fa"><td style="padding:12px;border:1px solid #ddd">Domínio</td><td style="padding:12px;border:1px solid #ddd;font-weight:bold">{{domain}}</td></tr><tr><td style="padding:12px;border:1px solid #ddd">Data de Expiração Antiga</td><td style="padding:12px;border:1px solid #ddd">{{old_expiry_date}}</td></tr><tr style="background:#f8f9fa"><td style="padding:12px;border:1px solid #ddd">Nova Data de Expiração</td><td style="padding:12px;border:1px solid #ddd;font-weight:bold">{{new_expiry_date}}</td></tr><tr><td style="padding:12px;border:1px solid #ddd">Fatura</td><td style="padding:12px;border:1px solid #ddd"><a href="{{invoice_link}}" style="color:#123659;text-decoration:none">Ver Fatura #{{invoice_number}}</a></td></tr></table><p style="color:#5a6c7d;line-height:1.6;margin-top:20px">O seu domínio continuará ativo durante mais um ano.</p></td></tr></table></body></html>', 'O seu domínio {{domain}} foi renovado até {{new_expiry_date}}. Ver fatura: {{invoice_link}}', '["site_name","user_name","domain","old_expiry_date","new_expiry_date","invoice_link","invoice_number"]', 1, 1);
+
+-- Domain suspension notice
+INSERT IGNORE INTO `email_templates` (`template_key`, `template_name`, `subject`, `body_html`, `body_text`, `variables`, `is_system`, `is_active`) VALUES 
+('domain_suspended', 'Domínio Suspenso - Ação Necessária', 'AVISO: {{domain}} foi suspenso', '<html><body style="font-family:Arial,sans-serif;background:#f4f5f7;padding:20px"><table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;margin:0 auto"><tr><td style="padding:32px"><h1 style="color:#c0392b;font-size:24px">⚠️ Aviso de Suspensão</h1><p style="color:#5a6c7d;line-height:1.6">Olá {{user_name}},</p><p style="color:#c0392b;line-height:1.6;font-weight:bold">O seu domínio <strong>{{domain}}</strong> foi suspenso.</p><p style="color:#5a6c7d;line-height:1.6"><strong>Razão:</strong> {{suspension_reason}}</p><p style="color:#5a6c7d;line-height:1.6">O seu website e email não estão acessíveis neste momento.</p><p style="margin:24px 0"><a href="{{dashboard_link}}" style="background:#32a852;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block">Resolver Problema</a></p><p style="color:#8896a6;font-size:13px">Se achar que isto é um erro, contacte o suporte imediatamente.</p></td></tr></table></body></html>', 'AVISO: {{domain}} foi suspenso. Razão: {{suspension_reason}}. Resolver: {{dashboard_link}}', '["site_name","user_name","domain","suspension_reason","dashboard_link"]', 1, 1);
 
 -- ============================================================================
 -- SETTINGS & CONFIGURATION
