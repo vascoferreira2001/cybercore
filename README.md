@@ -1,27 +1,48 @@
-# Website institucional (MVP)
+# CyberCore Website
 
-Este diretório contém um website moderno de Web Hosting em formato estático.
+Website institucional para serviços de alojamento, cloud, VPS, domínios e soluções empresariais.
 
-## Ficheiros
+## Estrutura do Projeto
 
-- `index.html` — página principal
-- `styles.css` — estilos responsivos
-- `script.js` — interações leves (ano automático + smooth scroll)
+```
+cybercore/
+├── index.html
+├── alojamento.html
+├── email.html
+├── dominios.html
+├── blog.html
+├── servidores-dedicados.html
+├── servidores-virtuais.html
+├── seguranca.html
+├── solucoes.html
+├── assets/
+│   ├── styles.css
+│   ├── script.js
+│   ├── header.html
+│   ├── topbar.html
+│   ├── footer.html
+│   ├── banners/
+│   ├── logo/
+│   └── parceiros/
+└── README.md
+```
 
-## Como abrir localmente
+## Funcionalidades
 
-Abre `index.html` diretamente no browser.
+- **SEO otimizado**: Metadados Open Graph, Twitter Card, favicons multi-formato.
+- **Carousel de banners**: Imagens de destaque com botões de ação.
+- **Barra de parceiros/clientes**: Logos dinâmicos e responsivos.
+- **Design responsivo**: Adaptado para desktop e mobile.
+- **Fragmentos HTML**: Header, footer e topbar carregados dinamicamente.
+- **Sistema de variáveis CSS**: Fácil personalização de cores e temas.
 
-## Ajustes recomendados antes de produção
 
-1. Substituir `NovaHost` pela tua marca.
-2. Trocar `billing.teudominio.com` pelos teus URLs reais do FOSSBilling.
-3. Atualizar email de suporte em `index.html`.
-4. Ajustar preços e planos para os teus produtos reais.
+## Créditos
 
-## Deploy em Windows Server 2022 + Plesk
+- Desenvolvido por Vasco Ferreira
+- Logos e imagens: Propriedade dos respetivos parceiros
 
-1. Criar domínio/subdomínio no Plesk.
-2. Fazer upload dos 3 ficheiros (`index.html`, `styles.css`, `script.js`) para o `httpdocs`.
-3. Ativar SSL no domínio.
-4. Confirmar links para o billing (`https://billing.teudominio.com`).
+## Licença
+
+Este projeto é de uso exclusivo da CyberCore.  
+Para uso comercial, contacte o autor.
